@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance AI Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Arial, sans-serif;
+    margin: 0;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .header {
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 24px;
+    margin: 0 0 4px 0;
+  }
+  .header p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 14px;
+  }
+  .card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid #334155;
+  }
+  .card h2 {
+    font-size: 16px;
+    margin: 0 0 16px 0;
+    color: #cbd5e1;
+  }
+  label {
+    display: block;
+    margin-top: 14px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  input:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+  button {
+    margin-top: 22px;
+    width: 100%;
+    padding: 14px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #475569;
+  }
+  .result-card {
+    display: none;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #334155;
+    font-size: 14px;
+  }
+  .result-row:last-child {
+    border-bottom: none;
+  }
+  .result-label {
+    color: #94a3b8;
+  }
+  .result-value {
+    font-weight: 600;
+  }
+  .profit-highlight {
+    color: #4ade80;
+  }
+  .summary-text {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #334155;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+  .error-box {
+    display: none;
+    background: #450a0a;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Finance AI Dashboard</h1>
+    <p>Generate an instant financial summary report from your numbers.</p>
+  </div>
+
+  <div class="card">
+    <h2>Company Details</h2>
+
+    <label>Company Name</label>
+    <input id="company" placeholder="e.g. TechCorp Sweden AB">
+
+    <label>Period</label>
+    <input id="period" placeholder="e.g. August 2026">
+
+    <label>Revenue (SEK)</label>
+    <input id="revenue" type="number" placeholder="e.g. 210000">
+
+    <label>Cost of Goods Sold (SEK)</label>
+    <input id="cogs" type="number" placeholder="e.g. 85000">
+
+    <label>Operating Expenses (SEK)</label>
+    <input id="expenses" type="number" placeholder="e.g. 52000">
+
+    <button id="generateBtn" onclick="generateReport()">Generate Report</button>
+
+    <div id="errorBox" class="error-box"></div>
+  </div>
+
+  <div class="card result-card" id="resultCard">
+    <h2>Report</h2>
+    <div class="result-row">
+      <span class="result-label">Company</span>
+      <span class="result-value" id="rCompany"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Period</span>
+      <span class="result-value" id="rPeriod"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Revenue</span>
+      <span class="result-value" id="rRevenue"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">COGS</span>
+      <span class="result-value" id="rCogs"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Operating Expenses</span>
+      <span class="result-value" id="rExpenses"></span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Net Profit</span>
+      <span class="result-value profit-highlight" id="rProfit"></span>
+    </div>
+    <div class="summary-text" id="rSummary"></div>
+  </div>
+
+</div>
+
+<script>
+async function generateReport() {
+  const btn = document.getElementById('generateBtn');
+  const resultCard = document.getElementById('resultCard');
+  const errorBox = document.getElementById('errorBox');
+
+  const data = {
+    company: document.getElementById('company').value,
+    period: document.getElementById('period').value,
+    revenue: document.getElementById('revenue').value,
+    cogs: document.getElementById('cogs').value,
+    operating_expenses: document.getElementById('expenses').value
+  };
+
+  btn.disabled = true;
+  btn.textContent = "Generating...";
+  errorBox.style.display = "none";
+  resultCard.style.display = "none";
+
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error("Server returned an error.");
+    }
+
+    const result = await response.json();
+
+    document.getElementById('rCompany').textContent = result.company;
+    document.getElementById('rPeriod').textContent = result.period;
+    document.getElementById('rRevenue').textContent = result.revenue + " SEK";
+    document.getElementById('rCogs').textContent = result.cogs + " SEK";
+    document.getElementById('rExpenses').textContent = result.operating_expenses + " SEK";
+    document.getElementById('rProfit').textContent = result.net_profit + " SEK";
+    document.getElementById('rSummary').textContent = result.summary;
+
+    resultCard.style.display = "block";
+
+  } catch (err) {
+    errorBox.textContent = "Something went wrong generating the report. Please check your inputs and try again.";
+    errorBox.style.display = "block";
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Generate Report";
+}
+</script>
+
+</body>
+</html>
