@@ -1,0 +1,19 @@
+{
+  "name": "ironlog",
+  "version": "1.0.0",
+  "description": "IronLog — personal powerlifting tracker. Offline-first PWA, wrapped with Capacitor for a native Android build.",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve -l 8080 .",
+    "android:add": "npx cap add android",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
