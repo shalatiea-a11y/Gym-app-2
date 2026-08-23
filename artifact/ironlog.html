@@ -1,0 +1,1608 @@
+﻿<title>IronLog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --ink: #141213;
+  --surface: #1E1B1C;
+  --surface-2: #282324;
+  --surface-3: #332D2F;
+  --line: #3D3638;
+  --chalk: #F3EFE9;
+  --chalk-dim: #B4ABA6;
+  --chalk-faint: #786F6C;
+  --iron: #E8452F;
+  --iron-dim: #C13A27;
+  --gold: #D9A63E;
+  --green: #3FA66B;
+  --amber: #E08A3C;
+  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-body: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  overscroll-behavior-y: none;
+}
+
+body { min-height: 100vh; }
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--ink);
+}
+
+.screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(14px + var(--safe-top)) 16px 104px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.topbar {
+  padding: calc(14px + var(--safe-top)) 16px 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--ink) 70%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 {
+  font-family: var(--font-display);
+  font-size: 30px;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.topbar .sub { font-size: 12px; color: var(--chalk-dim); margin-top: 4px; font-family: var(--font-mono); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--chalk-dim);
+  margin: 0 0 10px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px 18px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--iron);
+}
+.btn:active { transform: scale(0.97); }
+.btn.block { width: 100%; }
+.btn.secondary {
+  background: var(--surface-2);
+  color: var(--chalk);
+  border: 1px solid var(--line);
+}
+.btn.success { background: var(--green); color: #08150e; }
+.btn.danger { background: var(--surface-2); color: var(--iron); border: 1px solid var(--iron-dim); }
+.btn.small { padding: 8px 12px; font-size: 12.5px; border-radius: 7px; }
+.btn:disabled { opacity: 0.5; }
+
+label { display: block; font-size: 11.5px; font-weight: 600; color: var(--chalk-dim); margin: 12px 0 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--chalk);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+input[type=text], textarea, select { font-family: var(--font-body); }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--iron); outline-offset: -1px; }
+
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: rgba(30, 27, 28, 0.97);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-bottom);
+  z-index: 10;
+}
+.nav-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--chalk-faint);
+  padding: 10px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nav-btn .ic { font-size: 19px; }
+.nav-btn.active { color: var(--iron); }
+
+.deload-banner {
+  background: rgba(224, 138, 60, 0.14);
+  border: 1px solid rgba(224, 138, 60, 0.45);
+  color: var(--amber);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.exercise-card { padding: 14px; }
+.exercise-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.exercise-name { font-size: 17px; font-weight: 700; }
+.exercise-meta { font-size: 12.5px; color: var(--chalk-dim); margin-top: 2px; }
+.exercise-cat { font-size: 10.5px; color: var(--iron); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(232, 69, 47, 0.15);
+  color: var(--iron);
+  border: 1px solid rgba(232, 69, 47, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 1fr 38px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.set-row:first-of-type { border-top: none; }
+.set-num { font-family: var(--font-mono); font-weight: 600; color: var(--chalk-dim); text-align: center; }
+.set-row input { padding: 9px; text-align: center; }
+.set-check {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--chalk-dim);
+  font-size: 16px;
+}
+.set-check.done { background: var(--green); color: #08150e; border-color: transparent; }
+
+.prev-line { font-size: 11.5px; color: var(--chalk-faint); margin-top: 6px; font-family: var(--font-mono); }
+
+.suggestion-banner {
+  margin-top: 10px;
+  background: rgba(217, 166, 62, 0.12);
+  border: 1px solid rgba(217, 166, 62, 0.35);
+  color: var(--gold);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.photo-thumb {
+  width: 100%;
+  height: 120px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+}
+.photo-row { display: flex; gap: 8px; margin-top: 8px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat-tile {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.stat-tile .v { font-family: var(--font-mono); font-size: 19px; font-weight: 600; }
+.stat-tile .l { font-size: 10px; color: var(--chalk-dim); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+canvas.chart { width: 100%; height: 160px; display: block; }
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(6, 5, 5, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+.modal-backdrop.center { align-items: center; }
+.modal-sheet {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 18px calc(20px + var(--safe-bottom));
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  animation: slideUp 0.22s cubic-bezier(.2,.8,.2,1);
+}
+.modal-sheet.card-modal {
+  border-radius: 18px;
+  width: 88%;
+  max-width: 380px;
+}
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-title { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.02em; margin: 0 0 14px; }
+
+.timer-display {
+  font-family: var(--font-display);
+  font-size: 64px;
+  text-align: center;
+  margin: 18px 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.celebration {
+  position: fixed; inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(232,69,47,0.22), rgba(6,5,5,0.92));
+  animation: fadeIn 0.2s ease;
+}
+.celebration-card {
+  text-align: center;
+  padding: 32px 28px;
+  animation: popIn 0.5s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes popIn { 0% { transform: scale(0.4) rotate(-8deg); opacity: 0; } 60% { transform: scale(1.08) rotate(2deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.celebration-icon { font-size: 84px; filter: drop-shadow(0 0 24px rgba(217,166,62,0.55)); animation: bounce 1s ease infinite; }
+@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.celebration-title { font-family: var(--font-display); font-size: 34px; letter-spacing: 0.02em; margin: 14px 0 6px; color: var(--gold); }
+.celebration-desc { color: var(--chalk-dim); font-size: 14px; margin-bottom: 20px; }
+
+.confetti-piece {
+  position: fixed;
+  top: -20px;
+  width: 9px; height: 14px;
+  z-index: 199;
+  animation-name: confettiFall;
+  animation-timing-function: cubic-bezier(.3,.6,.7,1);
+  animation-fill-mode: forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(84px + var(--safe-bottom));
+  width: calc(100% - 32px);
+  max-width: 448px;
+  background: var(--surface-3);
+  border: 1px solid rgba(217,166,62,0.4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 150;
+  animation: toastIn 0.3s cubic-bezier(.2,.9,.3,1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+@keyframes toastIn { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.toast .ic { font-size: 22px; }
+.toast .t { font-weight: 700; font-size: 13px; }
+.toast .d { font-size: 11.5px; color: var(--chalk-dim); }
+
+.warning-banner {
+  background: rgba(224, 138, 60, 0.12);
+  border: 1px solid rgba(224, 138, 60, 0.4);
+  color: var(--amber);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--chalk-dim); }
+.empty-state .ic { font-size: 38px; margin-bottom: 10px; }
+
+.reorder-controls { display: flex; flex-direction: column; gap: 2px; }
+
+hr.sep { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
+
+.switch { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.switch span { font-size: 13px; font-weight: 500; color: var(--chalk); text-transform: none; letter-spacing: 0; }
+.switch input[type=checkbox] { width: 42px; height: 24px; appearance: none; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; position: relative; cursor: pointer; flex: 0 0 auto; }
+.switch input[type=checkbox]:checked { background: var(--iron); border-color: var(--iron); }
+.switch input[type=checkbox]::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--chalk); top: 2px; left: 2px; transition: 0.2s; }
+.switch input[type=checkbox]:checked::after { left: 20px; }
+
+.onboarding-wrap { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding: calc(34px + var(--safe-top)) 22px 30px; max-width: 480px; margin: 0 auto; }
+.onboarding-wrap h1 { font-family: var(--font-display); font-size: 40px; letter-spacing: 0.02em; margin: 0 0 4px; line-height: 1; }
+.onboarding-wrap .sub { color: var(--chalk-dim); margin-bottom: 24px; font-size: 14px; }
+
+.wordmark-bar { width: 40px; height: 5px; background: var(--iron); border-radius: 3px; margin-bottom: 14px; }
+
+::-webkit-scrollbar { display: none; }
+</style>
+
+<div id="app">
+  <div class="screen" style="display:flex;align-items:center;justify-content:center;">
+    <div style="text-align:center;color:var(--chalk-dim);font-family:var(--font-display);font-size:22px;letter-spacing:0.04em;">LOADING IRONLOG…</div>
+  </div>
+</div>
+
+<script>
+// ===================== db.js =====================
+const DB_NAME = 'ironlog';
+const DB_VERSION = 1;
+const STORES = ['settings', 'program', 'workouts', 'recovery', 'photos', 'achievements'];
+let dbPromise = null;
+
+function openDb() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('program')) db.createObjectStore('program', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('workouts')) {
+        const s = db.createObjectStore('workouts', { keyPath: 'id' });
+        s.createIndex('date', 'date');
+      }
+      if (!db.objectStoreNames.contains('recovery')) {
+        const s = db.createObjectStore('recovery', { keyPath: 'date' });
+        s.createIndex('date', 'date');
+      }
+      if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'exerciseId' });
+      if (!db.objectStoreNames.contains('achievements')) db.createObjectStore('achievements', { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+
+async function tx(storeName, mode) {
+  const db = await openDb();
+  return db.transaction(storeName, mode).objectStore(storeName);
+}
+
+const DB = {
+  async get(store, key) {
+    const s = await tx(store, 'readonly');
+    return new Promise((resolve, reject) => {
+      const r = s.get(key);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  },
+  async getAll(store) {
+    const s = await tx(store, 'readonly');
+    return new Promise((resolve, reject) => {
+      const r = s.getAll();
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  },
+  async put(store, value) {
+    const s = await tx(store, 'readwrite');
+    return new Promise((resolve, reject) => {
+      const r = s.put(value);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  },
+  async delete(store, key) {
+    const s = await tx(store, 'readwrite');
+    return new Promise((resolve, reject) => {
+      const r = s.delete(key);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  },
+  async clear(store) {
+    const s = await tx(store, 'readwrite');
+    return new Promise((resolve, reject) => {
+      const r = s.clear();
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  },
+  async exportAll() {
+    const dump = {};
+    for (const store of STORES) dump[store] = await DB.getAll(store);
+    dump._meta = { app: 'IronLog', exportedAt: new Date().toISOString(), version: DB_VERSION };
+    return dump;
+  },
+  async importAll(dump) {
+    for (const store of STORES) {
+      if (!dump[store]) continue;
+      await DB.clear(store);
+      const s = await tx(store, 'readwrite');
+      for (const item of dump[store]) s.put(item);
+    }
+  },
+};
+
+// ===================== defaults.js =====================
+const WEEK_PERCENTS = [
+  { week: 1, percent: 75, isDeload: false },
+  { week: 2, percent: 77.5, isDeload: false },
+  { week: 3, percent: 80, isDeload: false },
+  { week: 4, percent: 82.5, isDeload: false },
+  { week: 5, percent: 85, isDeload: false },
+  { week: 6, percent: 87.5, isDeload: false },
+  { week: 7, percent: 90, isDeload: false },
+  { week: 8, percent: 50, isDeload: true },
+];
+
+function ex(id, name, category, sets, reps, opts = {}) {
+  return {
+    id, name, category, sets, reps,
+    repsScheme: opts.repsScheme || null,
+    region: opts.region || 'upper',
+    isMainLift: !!opts.isMainLift,
+    percentSource: opts.percentSource || null,
+    percentMode: opts.percentMode || null,
+    fixedPercent: opts.fixedPercent ?? null,
+    weightIncrement: opts.weightIncrement ?? null,
+    notes: opts.notes || '',
+  };
+}
+
+function defaultProgram() {
+  return {
+    key: 'program',
+    days: [
+      { id: 'day1', name: 'Push', blocks: [
+        { category: 'Bench / Chest', exercises: [
+          ex('d1-bench', 'Bench Press', 'Bench / Chest', 5, '5', { isMainLift: true, percentSource: 'bench', percentMode: 'weekly', region: 'upper' }),
+          ex('d1-incline-machine', 'Incline Machine Press', 'Bench / Chest', 3, '8', { region: 'upper' }),
+          ex('d1-flat-machine', 'Flat Machine Chest Press', 'Bench / Chest', 2, '8-10', { region: 'upper' }),
+          ex('d1-cable-fly', 'Cable Fly', 'Bench / Chest', 2, '12-15', { region: 'upper' }),
+        ]},
+        { category: 'Shoulders', exercises: [
+          ex('d1-smith-shoulder', 'Smith Machine Shoulder Press', 'Shoulders', 2, '8', { region: 'upper' }),
+          ex('d1-lateral-raise', 'Lateral Raise Machine', 'Shoulders', 3, '8-12', { region: 'upper' }),
+        ]},
+        { category: 'Triceps', exercises: [
+          ex('d1-triceps-pushdown', 'Triceps Pushdown', 'Triceps', 3, '10-12', { region: 'upper' }),
+        ]},
+        { category: 'Legs', exercises: [
+          ex('d1-leg-extension', 'Leg Extension', 'Legs', 3, '12', { region: 'lower' }),
+        ]},
+      ]},
+      { id: 'day2', name: 'Pull', blocks: [
+        { category: 'Back', exercises: [
+          ex('d2-cs-row', 'Chest-Supported Row', 'Back', 3, '8', { region: 'upper' }),
+          ex('d2-single-arm-row', 'Single-Arm Row', 'Back', 3, '8-10', { region: 'upper' }),
+        ]},
+        { category: 'Rear Delts', exercises: [
+          ex('d2-rear-delt', 'Rear Delt Raise', 'Rear Delts', 3, '8', { region: 'upper' }),
+        ]},
+        { category: 'Biceps', exercises: [
+          ex('d2-cable-curl', 'Single-Arm Cable Curl', 'Biceps', 3, '10', { region: 'upper' }),
+          ex('d2-hammer-curl', 'Dumbbell Hammer Curl', 'Biceps', 3, '8-10', { region: 'upper' }),
+        ]},
+        { category: 'Legs', exercises: [
+          ex('d2-leg-curl', 'Leg Curl', 'Legs', 3, '10', { region: 'lower' }),
+        ]},
+      ]},
+      { id: 'day3', name: 'Legs', blocks: [
+        { category: 'Main Strength Lift', exercises: [
+          ex('d3-squat', 'Back Squat', 'Main Strength Lift', 5, '5', { isMainLift: true, percentSource: 'squat', percentMode: 'weekly', region: 'lower' }),
+        ]},
+        { category: 'Legs', exercises: [
+          ex('d3-hip-adduction', 'Hip Adduction', 'Legs', 3, '15', { region: 'lower' }),
+          ex('d3-calf-raise', 'Standing Calf Raise', 'Legs', 3, '15', { region: 'lower' }),
+        ]},
+      ]},
+      { id: 'day4', name: 'Upper', blocks: [
+        { category: 'Chest', exercises: [
+          ex('d4-bench', 'Bench Press', 'Chest', 4, '8', { percentSource: 'bench', percentMode: 'fixed', fixedPercent: 65, region: 'upper' }),
+        ]},
+        { category: 'Back', exercises: [
+          ex('d4-cs-row', 'Chest-Supported Row', 'Back', 3, '8', { region: 'upper' }),
+          ex('d4-single-arm-row', 'Single-Arm Row', 'Back', 3, '8', { region: 'upper' }),
+        ]},
+        { category: 'Biceps', exercises: [
+          ex('d4-preacher-curl', 'Preacher Curl', 'Biceps', 3, '10', { region: 'upper' }),
+        ]},
+      ]},
+      { id: 'day5', name: 'Deadlift', blocks: [
+        { category: 'Main Strength Lift', exercises: [
+          ex('d5-deadlift', 'Deadlift', 'Main Strength Lift', 5, '5→4→3→2→1', { isMainLift: true, percentSource: 'deadlift', percentMode: 'weekly', region: 'lower', repsScheme: [5, 4, 3, 2, 1] }),
+        ]},
+        { category: 'Legs', exercises: [
+          ex('d5-seated-leg-curl', 'Seated Leg Curl', 'Legs', 3, '10', { region: 'lower' }),
+        ]},
+      ]},
+    ],
+  };
+}
+
+function defaultSettings() {
+  return {
+    key: 'settings',
+    oneRM: { bench: 100, squat: 120, deadlift: 140 },
+    weightIncrements: { upper: 2.5, lower: 5 },
+    roundingIncrement: 2.5,
+    restSeconds: 300,
+    timerAlertMode: 'visual',
+    weekPercents: WEEK_PERCENTS,
+    blockNumber: 1,
+    currentWeek: null,
+    currentDayIndex: null,
+    onboardingComplete: false,
+    prHistory: {},
+    lastRecoveryWarningDismissedAt: null,
+    accent: 'iron',
+  };
+}
+
+// ===================== calc.js =====================
+function roundToIncrement(value, increment) {
+  if (!increment) return Math.round(value * 100) / 100;
+  return Math.round(value / increment) * increment;
+}
+function workingWeight(oneRM, percent, roundingIncrement) {
+  const raw = (oneRM * percent) / 100;
+  return roundToIncrement(raw, roundingIncrement);
+}
+function estimate1RM(weight, reps) {
+  if (!weight || !reps) return 0;
+  if (reps === 1) return weight;
+  return weight * (1 + reps / 30);
+}
+function parseRepTarget(reps) {
+  if (!reps) return { min: 0, max: 0 };
+  const m = String(reps).match(/(\d+)\s*-\s*(\d+)/);
+  if (m) return { min: parseInt(m[1], 10), max: parseInt(m[2], 10) };
+  const n = parseInt(reps, 10);
+  return { min: n || 0, max: n || 0 };
+}
+function totalVolume(sets) {
+  return sets.reduce((sum, s) => sum + (s.weight || 0) * (s.actualReps || 0), 0);
+}
+function suggestIncrease(region, weightIncrements) {
+  return region === 'lower' ? weightIncrements.lower : weightIncrements.upper;
+}
+function checkExceededTarget(targetReps, actualReps) {
+  if (!targetReps || !actualReps) return null;
+  const exceededBy = actualReps - targetReps;
+  if (exceededBy >= 3) return { exceededBy };
+  return null;
+}
+function toDateOnly(d) {
+  const dt = new Date(d);
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+}
+function computeStreak(workoutDates) {
+  if (!workoutDates.length) return 0;
+  const uniqueDays = [...new Set(workoutDates.map((d) => toDateOnly(d).getTime()))].sort((a, b) => b - a);
+  const today = toDateOnly(new Date()).getTime();
+  const oneDay = 24 * 60 * 60 * 1000;
+  let streak = 0;
+  let cursor = today;
+  if (uniqueDays[0] !== today) cursor = today - oneDay;
+  for (const day of uniqueDays) {
+    if (day === cursor) { streak++; cursor -= oneDay; }
+    else if (day < cursor) break;
+  }
+  return streak;
+}
+function isoWeekKey(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+function monthKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// ===================== achievements.js =====================
+const BADGES = [
+  { id: 'first_workout', title: 'First Workout', desc: 'You logged your very first session.', icon: '🏁' },
+  { id: 'workouts_10', title: '10 Workouts', desc: 'Ten sessions in the books.', icon: '🔟' },
+  { id: 'workouts_50', title: '50 Workouts', desc: 'Fifty sessions of grinding.', icon: '🏆' },
+  { id: 'workouts_100', title: '100 Workouts', desc: 'A full century of training.', icon: '💯' },
+  { id: 'first_bench_100', title: 'First 100kg Bench', desc: 'You touched 3 plates on bench.', icon: '🎖️' },
+  { id: 'first_squat_120', title: 'First 120kg Squat', desc: 'A big squat milestone.', icon: '🎖️' },
+  { id: 'first_deadlift_140', title: 'First 140kg Deadlift', desc: 'A big pull milestone.', icon: '🎖️' },
+  { id: 'new_bench_pr', title: 'New Bench PR', desc: 'Heaviest bench of your life so far.', icon: '📈' },
+  { id: 'new_squat_pr', title: 'New Squat PR', desc: 'Heaviest squat of your life so far.', icon: '📈' },
+  { id: 'new_deadlift_pr', title: 'New Deadlift PR', desc: 'Heaviest deadlift of your life so far.', icon: '📈' },
+  { id: 'streak_7', title: '7-Day Streak', desc: 'Trained 7 days in a row.', icon: '🔥' },
+  { id: 'streak_30', title: '30-Day Streak', desc: 'Trained 30 days in a row.', icon: '🔥🔥' },
+];
+function badgeById(id) { return BADGES.find((b) => b.id === id); }
+const LIFT_THRESHOLDS = {
+  bench: { weight: 100, badge: 'first_bench_100' },
+  squat: { weight: 120, badge: 'first_squat_120' },
+  deadlift: { weight: 140, badge: 'first_deadlift_140' },
+};
+const LIFT_PR_BADGE = { bench: 'new_bench_pr', squat: 'new_squat_pr', deadlift: 'new_deadlift_pr' };
+function evaluateAchievements(ctx) {
+  const unlocked = [];
+  const has = (id) => ctx.alreadyUnlocked.has(id);
+  const grant = (id) => { if (!has(id)) unlocked.push(id); };
+  if (ctx.totalWorkouts >= 1) grant('first_workout');
+  if (ctx.totalWorkouts >= 10) grant('workouts_10');
+  if (ctx.totalWorkouts >= 50) grant('workouts_50');
+  if (ctx.totalWorkouts >= 100) grant('workouts_100');
+  if (ctx.streak >= 7) grant('streak_7');
+  if (ctx.streak >= 30) grant('streak_30');
+  for (const evt of ctx.liftPrEvents || []) {
+    const threshold = LIFT_THRESHOLDS[evt.liftKey];
+    if (threshold && evt.type === 'weight' && evt.value >= threshold.weight) grant(threshold.badge);
+    if (evt.type === 'weight' && LIFT_PR_BADGE[evt.liftKey]) grant(LIFT_PR_BADGE[evt.liftKey]);
+  }
+  return unlocked.map(badgeById).filter(Boolean);
+}
+
+// ===================== charts.js =====================
+function setupCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: rect.width, h: rect.height };
+}
+function drawLineChart(canvas, points, opts = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 40, r: 12, t: 16, b: 24 };
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
+  const color = opts.color || '#E8452F';
+  ctx.strokeStyle = 'rgba(243,239,233,0.08)';
+  ctx.fillStyle = 'rgba(243,239,233,0.45)';
+  ctx.font = "10px 'IBM Plex Mono', monospace";
+  ctx.lineWidth = 1;
+  if (!points.length) { ctx.fillText('No data yet', pad.l, pad.t + plotH / 2); return; }
+  const values = points.map((p) => p.value);
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  if (min === max) { min -= 1; max += 1; }
+  const range = max - min;
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.t + (plotH * i) / gridLines;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = max - (range * i) / gridLines;
+    ctx.fillText(Math.round(val * 10) / 10, 2, y + 3);
+  }
+  const stepX = points.length > 1 ? plotW / (points.length - 1) : 0;
+  const xy = (i) => {
+    const x = pad.l + stepX * i;
+    const y = pad.t + plotH - ((points[i].value - min) / range) * plotH;
+    return [x, y];
+  };
+  ctx.beginPath();
+  points.forEach((p, i) => { const [x, y] = xy(i); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  const [lastX] = xy(points.length - 1);
+  ctx.lineTo(lastX, pad.t + plotH); ctx.lineTo(pad.l, pad.t + plotH); ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + plotH);
+  grad.addColorStop(0, color + '55'); grad.addColorStop(1, color + '00');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  points.forEach((p, i) => { const [x, y] = xy(i); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+  points.forEach((p, i) => { const [x, y] = xy(i); ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); });
+}
+function drawBarChart(canvas, points, opts = {}) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 40, r: 12, t: 16, b: 24 };
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
+  const color = opts.color || '#E8452F';
+  ctx.strokeStyle = 'rgba(243,239,233,0.08)';
+  ctx.fillStyle = 'rgba(243,239,233,0.45)';
+  ctx.font = "10px 'IBM Plex Mono', monospace";
+  if (!points.length) { ctx.fillText('No data yet', pad.l, pad.t + plotH / 2); return; }
+  const values = points.map((p) => p.value);
+  const max = Math.max(...values, 1);
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.t + (plotH * i) / gridLines;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const val = max - (max * i) / gridLines;
+    ctx.fillText(Math.round(val), 2, y + 3);
+  }
+  const barW = (plotW / points.length) * 0.6;
+  const gap = (plotW / points.length) * 0.4;
+  points.forEach((p, i) => {
+    const x = pad.l + i * (barW + gap) + gap / 2;
+    const barH = (p.value / max) * plotH;
+    const y = pad.t + plotH - barH;
+    ctx.fillStyle = color; ctx.fillRect(x, y, barW, barH);
+    ctx.fillStyle = 'rgba(243,239,233,0.5)'; ctx.fillText(p.label, x, h - 6);
+  });
+}
+
+// ===================== app.js =====================
+const APP = document.getElementById('app');
+const STATE = { settings: null, program: null, screen: 'today', draftWorkout: null, celebrationQueue: [] };
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const fmt1 = (n) => (Math.round(n * 10) / 10).toString();
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+async function boot() {
+  let settings = await DB.get('settings', 'settings');
+  let program = await DB.get('program', 'program');
+  if (!settings) { settings = defaultSettings(); await DB.put('settings', settings); }
+  if (!program) { program = defaultProgram(); await DB.put('program', program); }
+  STATE.settings = settings;
+  STATE.program = program;
+  const workouts = await DB.getAll('workouts');
+  STATE.draftWorkout = workouts.find((w) => !w.completedAt) || null;
+  render();
+}
+
+async function saveSettings() { await DB.put('settings', STATE.settings); }
+async function saveProgram() { await DB.put('program', STATE.program); }
+function currentWeekInfo() {
+  const wk = STATE.settings.currentWeek || 1;
+  return STATE.settings.weekPercents.find((w) => w.week === wk) || STATE.settings.weekPercents[0];
+}
+
+function render() {
+  if (!STATE.settings.onboardingComplete) { APP.innerHTML = ''; APP.appendChild(renderOnboarding()); return; }
+  APP.innerHTML = '';
+  const topbar = document.createElement('div');
+  topbar.className = 'topbar';
+  topbar.innerHTML = titleForScreen();
+  APP.appendChild(topbar);
+  const screenEl = document.createElement('div');
+  screenEl.className = 'screen';
+  screenEl.id = 'screen';
+  APP.appendChild(screenEl);
+  renderScreenBody(screenEl);
+  const nav = document.createElement('div');
+  nav.className = 'bottom-nav';
+  nav.innerHTML = [
+    ['today', '🏋️', 'Today'], ['program', '📋', 'Program'], ['progress', '📊', 'Progress'],
+    ['recovery', '🌙', 'Recovery'], ['settings', '⚙️', 'Settings'],
+  ].map(([key, ic, label]) => `<button class="nav-btn ${STATE.screen === key ? 'active' : ''}" data-nav="${key}"><span class="ic">${ic}</span><span>${label}</span></button>`).join('');
+  nav.addEventListener('click', (e) => { const btn = e.target.closest('[data-nav]'); if (!btn) return; STATE.screen = btn.dataset.nav; render(); });
+  APP.appendChild(nav);
+}
+
+function titleForScreen() {
+  const map = {
+    today: ['IronLog', `BLOCK ${STATE.settings.blockNumber} · WEEK ${STATE.settings.currentWeek || 1} OF 8`],
+    program: ['Program', 'EVERYTHING HERE IS EDITABLE'],
+    progress: ['Progress', 'YOUR TRENDS & TROPHIES'],
+    recovery: ['Recovery', 'SLEEP, MOOD, BODY & FUEL'],
+    settings: ['Settings', 'APP PREFERENCES & BACKUP'],
+  };
+  const [t, s] = map[STATE.screen];
+  return `<div><h1>${t}</h1><div class="sub">${s}</div></div>`;
+}
+
+function renderScreenBody(container) {
+  if (STATE.screen === 'today') return renderToday(container);
+  if (STATE.screen === 'program') return renderProgram(container);
+  if (STATE.screen === 'progress') return renderProgress(container);
+  if (STATE.screen === 'recovery') return renderRecovery(container);
+  if (STATE.screen === 'settings') return renderSettings(container);
+}
+
+function renderOnboarding() {
+  const wrap = document.createElement('div');
+  wrap.className = 'onboarding-wrap';
+  const s = STATE.settings;
+  wrap.innerHTML = `
+    <div class="wordmark-bar"></div>
+    <h1>IRONLOG</h1>
+    <div class="sub">Set your starting numbers. You can change all of this later.</div>
+    <div class="card">
+      <div class="card-title">Current 1RM</div>
+      <label>Bench Press (kg)</label><input type="number" id="ob-bench" value="${s.oneRM.bench}">
+      <label>Squat (kg)</label><input type="number" id="ob-squat" value="${s.oneRM.squat}">
+      <label>Deadlift (kg)</label><input type="number" id="ob-deadlift" value="${s.oneRM.deadlift}">
+    </div>
+    <div class="card">
+      <div class="card-title">Start Point</div>
+      <label>Starting Week (1-8, week 8 is deload)</label>
+      <select id="ob-week">${s.weekPercents.map((w) => `<option value="${w.week}">Week ${w.week}${w.isDeload ? ' (Deload)' : ''} — ${w.percent}%</option>`).join('')}</select>
+      <label>Starting Day</label>
+      <select id="ob-day">${STATE.program.days.map((d, i) => `<option value="${i}">Day ${i + 1} — ${d.name}</option>`).join('')}</select>
+    </div>
+    <div class="card">
+      <div class="card-title">Weight Increments</div>
+      <div class="row">
+        <div><label>Upper body +kg</label><input type="number" step="0.5" id="ob-inc-upper" value="${s.weightIncrements.upper}"></div>
+        <div><label>Lower body +kg</label><input type="number" step="0.5" id="ob-inc-lower" value="${s.weightIncrements.lower}"></div>
+      </div>
+      <label>Round calculated weights to nearest</label>
+      <select id="ob-round"><option value="2.5" selected>2.5 kg</option><option value="1">1 kg</option><option value="5">5 kg</option></select>
+    </div>
+    <button class="btn block" id="ob-start" style="margin-top:10px;">Start Training</button>
+  `;
+  wrap.querySelector('#ob-start').addEventListener('click', async () => {
+    s.oneRM.bench = parseFloat(wrap.querySelector('#ob-bench').value) || s.oneRM.bench;
+    s.oneRM.squat = parseFloat(wrap.querySelector('#ob-squat').value) || s.oneRM.squat;
+    s.oneRM.deadlift = parseFloat(wrap.querySelector('#ob-deadlift').value) || s.oneRM.deadlift;
+    s.currentWeek = parseInt(wrap.querySelector('#ob-week').value, 10);
+    s.currentDayIndex = parseInt(wrap.querySelector('#ob-day').value, 10);
+    s.weightIncrements.upper = parseFloat(wrap.querySelector('#ob-inc-upper').value) || s.weightIncrements.upper;
+    s.weightIncrements.lower = parseFloat(wrap.querySelector('#ob-inc-lower').value) || s.weightIncrements.lower;
+    s.roundingIncrement = parseFloat(wrap.querySelector('#ob-round').value) || 2.5;
+    s.onboardingComplete = true;
+    await saveSettings();
+    render();
+  });
+  return wrap;
+}
+
+function computeTarget(exerciseDef) {
+  if (!exerciseDef.percentSource) return { weight: null, percent: null };
+  const oneRM = STATE.settings.oneRM[exerciseDef.percentSource];
+  let percent = exerciseDef.percentMode === 'fixed' ? exerciseDef.fixedPercent : currentWeekInfo().percent;
+  const weight = workingWeight(oneRM, percent, STATE.settings.roundingIncrement);
+  return { weight, percent };
+}
+
+async function findPrevious(exerciseId, excludeWorkoutId) {
+  const workouts = await DB.getAll('workouts');
+  const sorted = workouts.filter((w) => w.completedAt && w.id !== excludeWorkoutId).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+  for (const w of sorted) {
+    const inst = w.exercises && w.exercises.find((e) => e.exerciseId === exerciseId);
+    if (inst) {
+      const doneSets = inst.sets.filter((s) => s.done);
+      if (doneSets.length) {
+        const top = doneSets.reduce((a, b) => (b.weight > a.weight ? b : a));
+        return { date: w.completedAt, weight: top.weight, reps: top.actualReps };
+      }
+    }
+  }
+  return null;
+}
+
+async function buildWorkout(dayIndex) {
+  const day = STATE.program.days[dayIndex];
+  const weekInfo = currentWeekInfo();
+  const exercises = [];
+  for (const block of day.blocks) {
+    for (const def of block.exercises) {
+      const { weight, percent } = computeTarget(def);
+      const prev = await findPrevious(def.id, null);
+      const sets = [];
+      for (let i = 0; i < def.sets; i++) {
+        const targetReps = def.repsScheme ? def.repsScheme[i] : parseRepTarget(def.reps).max;
+        sets.push({ targetReps, weight: weight != null ? weight : (prev ? prev.weight : null), actualReps: null, done: false });
+      }
+      exercises.push({
+        exerciseId: def.id, name: def.name, category: block.category, region: def.region,
+        isMainLift: def.isMainLift, percentSource: def.percentSource, percentMode: def.percentMode,
+        percent, targetWeight: weight, repsDisplay: def.reps, notes: def.notes || '',
+        sessionNote: '', previous: prev, sets, suggestion: null,
+      });
+    }
+  }
+  return {
+    id: uid(), dayId: day.id, dayName: day.name, dayIndex, weekNumber: STATE.settings.currentWeek || 1,
+    isDeload: !!weekInfo.isDeload, startedAt: new Date().toISOString(), completedAt: null, durationSec: 0, exercises,
+  };
+}
+
+async function persistDraft() { if (STATE.draftWorkout) await DB.put('workouts', STATE.draftWorkout); }
+function liftKeyFor(def) { return def.percentSource || def.exerciseId || def.id; }
+
+async function renderToday(container) {
+  const w = STATE.draftWorkout;
+  if (!w) {
+    const dayIdx = STATE.settings.currentDayIndex ?? 0;
+    const day = STATE.program.days[dayIdx];
+    const weekInfo = currentWeekInfo();
+    container.innerHTML = `
+      ${weekInfo.isDeload ? `<div class="deload-banner">DELOAD WEEK — RECOVERY &amp; TECHNIQUE</div>` : ''}
+      <div class="card">
+        <div class="card-title">Next Up</div>
+        <div class="exercise-name" style="font-size:20px;">Day ${dayIdx + 1} — ${day.name}</div>
+        <div class="exercise-meta" style="margin:8px 0 14px;">${day.blocks.flatMap((b) => b.exercises.map((e) => e.name)).join(' · ')}</div>
+        <button class="btn block" id="start-workout">Start Workout</button>
+      </div>`;
+    container.querySelector('#start-workout').addEventListener('click', async () => {
+      STATE.draftWorkout = await buildWorkout(dayIdx);
+      await persistDraft();
+      render();
+    });
+    return;
+  }
+  container.innerHTML = `
+    ${w.isDeload ? `<div class="deload-banner">DELOAD WEEK — RECOVERY &amp; TECHNIQUE</div>` : ''}
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+      <div><div class="exercise-name">Day ${w.dayIndex + 1} — ${w.dayName}</div><div class="exercise-meta">Week ${w.weekNumber} of 8</div></div>
+      <button class="btn success small" id="finish-workout">Finish</button>
+    </div>
+    <div id="exercise-list"></div>`;
+  const list = container.querySelector('#exercise-list');
+  w.exercises.forEach((inst, idx) => list.appendChild(renderExerciseCard(inst, idx)));
+  container.querySelector('#finish-workout').addEventListener('click', finishWorkout);
+}
+
+function renderExerciseCard(inst, exIdx) {
+  const card = document.createElement('div');
+  card.className = 'card exercise-card';
+  const vol = totalVolume(inst.sets.filter((s) => s.done).map((s) => ({ weight: s.weight, actualReps: s.actualReps })));
+  const targetLine = inst.targetWeight != null
+    ? `Working weight: <strong>${fmt1(inst.targetWeight)} kg</strong> (${inst.percentMode === 'fixed' ? 'fixed' : 'week'} ${inst.percent}% of ${fmt1(STATE.settings.oneRM[inst.percentSource])} kg)`
+    : `Target: ${inst.repsDisplay} reps — enter your own weight`;
+  card.innerHTML = `
+    <div class="exercise-cat">${inst.category}</div>
+    <div class="exercise-head">
+      <div>
+        <div class="exercise-name">${inst.name}${inst.isMainLift ? ' <span class="badge-pill">Main Lift</span>' : ''}</div>
+        <div class="exercise-meta">${targetLine}</div>
+        ${inst.notes ? `<div class="prev-line">📝 ${escapeHtml(inst.notes)}</div>` : ''}
+      </div>
+    </div>
+    ${inst.previous ? `<div class="prev-line">Previous: ${fmt1(inst.previous.weight)} kg × ${inst.previous.reps} reps</div>` : ''}
+    <div class="sets-wrap" data-ex="${exIdx}">${inst.sets.map((s, si) => renderSetRow(s, si)).join('')}</div>
+    <div class="prev-line" style="margin-top:8px;">Total volume: <strong>${fmt1(vol)} kg</strong></div>
+    ${inst.suggestion ? `<div class="suggestion-banner">💡 ${inst.suggestion}</div>` : ''}
+    <div class="photo-zone" data-ex="${exIdx}"></div>
+    <label style="margin-top:10px;">Session note</label>
+    <textarea rows="1" data-ex="${exIdx}" class="session-note" placeholder="Optional note for this set...">${escapeHtml(inst.sessionNote || '')}</textarea>
+  `;
+  renderPhotoZone(card.querySelector('.photo-zone'), inst.exerciseId);
+  card.querySelector('.sets-wrap').addEventListener('click', (e) => {
+    const btn = e.target.closest('.set-check');
+    if (!btn) return;
+    onToggleSet(exIdx, parseInt(btn.dataset.set, 10), card, inst);
+  });
+  card.querySelectorAll('.set-row input[data-field]').forEach((inp) => {
+    inp.addEventListener('change', () => {
+      const si = parseInt(inp.dataset.set, 10);
+      const val = parseFloat(inp.value);
+      inst.sets[si][inp.dataset.field] = isNaN(val) ? null : val;
+      persistDraft();
+    });
+  });
+  card.querySelector('.session-note').addEventListener('change', (e) => { inst.sessionNote = e.target.value; persistDraft(); });
+  return card;
+}
+
+function renderSetRow(s, si) {
+  return `<div class="set-row">
+    <div class="set-num">${si + 1}</div>
+    <input type="number" step="0.5" placeholder="kg" data-field="weight" data-set="${si}" value="${s.weight ?? ''}">
+    <input type="number" placeholder="reps (target ${s.targetReps})" data-field="actualReps" data-set="${si}" value="${s.actualReps ?? ''}">
+    <button class="set-check ${s.done ? 'done' : ''}" data-set="${si}">${s.done ? '✓' : ''}</button>
+  </div>`;
+}
+
+async function onToggleSet(exIdx, si, cardEl, inst) {
+  const set = inst.sets[si];
+  set.done = !set.done;
+  if (set.done && (set.actualReps == null || set.weight == null)) {
+    toast('⚠️', 'Missing data', 'Enter weight and reps before checking off a set.');
+    set.done = false;
+    return;
+  }
+  await persistDraft();
+  if (set.done) {
+    checkMiniPr(inst);
+    const exceeded = checkExceededTarget(set.targetReps, set.actualReps);
+    const isLastSet = si === inst.sets.length - 1;
+    if (exceeded && isLastSet) {
+      const inc = suggestIncrease(inst.region, STATE.settings.weightIncrements);
+      inst.suggestion = `Great job! You exceeded the target by ${exceeded.exceededBy} rep${exceeded.exceededBy > 1 ? 's' : ''}. This weight may be too light. Consider +${inc} kg next time.`;
+      await persistDraft();
+    }
+    openRestTimer();
+  }
+  render();
+}
+
+function checkMiniPr(inst) {
+  const key = liftKeyFor(inst);
+  const hist = STATE.settings.prHistory[key] || { maxWeight: 0, maxReps: 0, best1RM: 0, maxVolume: 0 };
+  const doneSets = inst.sets.filter((s) => s.done);
+  const vol = totalVolume(doneSets.map((s) => ({ weight: s.weight, actualReps: s.actualReps })));
+  const lastSet = doneSets[doneSets.length - 1];
+  const est1rm = estimate1RM(lastSet.weight, lastSet.actualReps);
+  let hit = null;
+  if (lastSet.weight > hist.maxWeight) hit = 'weight';
+  else if (est1rm > hist.best1RM) hit = '1rm';
+  else if (vol > hist.maxVolume) hit = 'volume';
+  hist.maxWeight = Math.max(hist.maxWeight, lastSet.weight);
+  hist.maxReps = Math.max(hist.maxReps, lastSet.actualReps);
+  hist.best1RM = Math.max(hist.best1RM, est1rm);
+  hist.maxVolume = Math.max(hist.maxVolume, vol);
+  STATE.settings.prHistory[key] = hist;
+  saveSettings();
+  if (hit) {
+    inst._prEventsThisSession = inst._prEventsThisSession || [];
+    inst._prEventsThisSession.push({ liftKey: key, type: hit, value: lastSet.weight });
+    toast('🔥', 'New PR!', `${inst.name}: new ${hit === '1rm' ? 'estimated 1RM' : hit} PR.`);
+  }
+}
+
+function renderPhotoZone(container, exerciseId) {
+  container.innerHTML = `<div class="photo-row">
+    <button class="btn secondary small" data-photo-action="capture">📷 Photo</button>
+    <button class="btn secondary small" data-photo-action="view" style="display:none;">👁 View</button>
+    <button class="btn secondary small" data-photo-action="delete" style="display:none;">🗑 Delete</button>
+  </div>`;
+  DB.get('photos', exerciseId).then((rec) => {
+    if (rec) {
+      container.querySelector('[data-photo-action="capture"]').textContent = '📷 Replace';
+      container.querySelector('[data-photo-action="view"]').style.display = '';
+      container.querySelector('[data-photo-action="delete"]').style.display = '';
+    }
+  });
+  container.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-photo-action]');
+    if (!btn) return;
+    const action = btn.dataset.photoAction;
+    if (action === 'capture') {
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        await DB.put('photos', { exerciseId, blob: file, savedAt: new Date().toISOString() });
+        toast('📷', 'Photo saved', 'Machine photo attached to this exercise.');
+        renderPhotoZone(container, exerciseId);
+      };
+      input.click();
+    } else if (action === 'view') {
+      const rec = await DB.get('photos', exerciseId);
+      if (rec) openPhotoViewer(rec.blob);
+    } else if (action === 'delete') {
+      await DB.delete('photos', exerciseId);
+      renderPhotoZone(container, exerciseId);
+    }
+  });
+}
+
+function openPhotoViewer(blob) {
+  const url = URL.createObjectURL(blob);
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop center';
+  backdrop.innerHTML = `<div class="modal-sheet card-modal" style="padding:8px;"><img src="${url}" style="width:100%;border-radius:14px;display:block;"><button class="btn block secondary" style="margin-top:10px;">Close</button></div>`;
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop || e.target.tagName === 'BUTTON') { backdrop.remove(); URL.revokeObjectURL(url); } });
+  document.body.appendChild(backdrop);
+}
+
+function openRestTimer() {
+  const seconds = STATE.settings.restSeconds || 300;
+  let remaining = seconds;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop center';
+  backdrop.innerHTML = `
+    <div class="modal-sheet card-modal">
+      <div class="modal-title" style="text-align:center;">Rest Timer</div>
+      <div class="timer-display" id="timer-display">${formatTime(remaining)}</div>
+      <div class="row"><button class="btn secondary" id="timer-minus">−30s</button><button class="btn secondary" id="timer-plus">+30s</button></div>
+      <button class="btn block" id="timer-skip" style="margin-top:10px;">Skip / Close</button>
+    </div>`;
+  document.body.appendChild(backdrop);
+  const display = backdrop.querySelector('#timer-display');
+  const interval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      display.textContent = "Time's up!";
+      clearInterval(interval);
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      setTimeout(() => backdrop.remove(), 1200);
+      return;
+    }
+    display.textContent = formatTime(remaining);
+  }, 1000);
+  backdrop.querySelector('#timer-minus').addEventListener('click', () => { remaining = Math.max(0, remaining - 30); display.textContent = formatTime(remaining); });
+  backdrop.querySelector('#timer-plus').addEventListener('click', () => { remaining += 30; display.textContent = formatTime(remaining); });
+  backdrop.querySelector('#timer-skip').addEventListener('click', () => { clearInterval(interval); backdrop.remove(); });
+}
+function formatTime(sec) { const m = Math.floor(sec / 60); const s = sec % 60; return `${m}:${String(s).padStart(2, '0')}`; }
+
+async function finishWorkout() {
+  const w = STATE.draftWorkout;
+  if (!w.exercises.some((e) => e.sets.some((s) => s.done))) { toast('⚠️', 'No sets logged', 'Log at least one set before finishing.'); return; }
+  w.completedAt = new Date().toISOString();
+  w.durationSec = Math.round((new Date(w.completedAt) - new Date(w.startedAt)) / 1000);
+  let liftPrEvents = [];
+  w.exercises.forEach((inst) => { if (inst._prEventsThisSession) liftPrEvents = liftPrEvents.concat(inst._prEventsThisSession); delete inst._prEventsThisSession; });
+  await DB.put('workouts', w);
+  const allWorkouts = await DB.getAll('workouts');
+  const completed = allWorkouts.filter((x) => x.completedAt);
+  const streak = computeStreak(completed.map((x) => x.completedAt));
+  const alreadyUnlocked = new Set((await DB.getAll('achievements')).map((a) => a.id));
+  const newBadges = evaluateAchievements({ totalWorkouts: completed.length, alreadyUnlocked, liftPrEvents, streak });
+  for (const b of newBadges) await DB.put('achievements', { id: b.id, unlockedAt: new Date().toISOString() });
+  STATE.settings.currentDayIndex = (STATE.settings.currentDayIndex + 1) % STATE.program.days.length;
+  const justFinishedLastDay = STATE.settings.currentDayIndex === 0;
+  await saveSettings();
+  STATE.draftWorkout = null;
+  STATE.celebrationQueue = newBadges.slice();
+  render();
+  runCelebrationQueue();
+  if (justFinishedLastDay) setTimeout(() => promptWeekAdvance(), newBadges.length ? 400 * (newBadges.length + 1) : 300);
+}
+
+function promptWeekAdvance() {
+  const wk = STATE.settings.currentWeek || 1;
+  const info = currentWeekInfo();
+  if (info.isDeload) { openStartNewBlockModal(); return; }
+  const nextWeek = Math.min(8, wk + 1);
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop center';
+  backdrop.innerHTML = `
+    <div class="modal-sheet card-modal">
+      <div class="modal-title">Cycle Complete</div>
+      <div class="exercise-meta" style="margin-bottom:16px;">You finished all 5 training days. Move on to Week ${nextWeek}?</div>
+      <button class="btn block" id="wk-yes">Yes, start Week ${nextWeek}</button>
+      <button class="btn block secondary" id="wk-no" style="margin-top:8px;">Stay on Week ${wk}</button>
+    </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#wk-yes').addEventListener('click', async () => { STATE.settings.currentWeek = nextWeek; await saveSettings(); backdrop.remove(); render(); });
+  backdrop.querySelector('#wk-no').addEventListener('click', () => backdrop.remove());
+}
+
+function runCelebrationQueue() {
+  if (!STATE.celebrationQueue.length) return;
+  const badge = STATE.celebrationQueue.shift();
+  showCelebration(badge, () => runCelebrationQueue());
+}
+function showCelebration(badge, onClose) {
+  spawnConfetti();
+  const el = document.createElement('div');
+  el.className = 'celebration';
+  el.innerHTML = `<div class="celebration-card"><div class="celebration-icon">${badge.icon}</div><div class="celebration-title">${badge.title}</div><div class="celebration-desc">${badge.desc}</div><button class="btn">Nice!</button></div>`;
+  el.querySelector('button').addEventListener('click', () => { el.remove(); if (onClose) onClose(); });
+  document.body.appendChild(el);
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 160]);
+}
+function spawnConfetti() {
+  const colors = ['#E8452F', '#D9A63E', '#3FA66B', '#E08A3C', '#F3EFE9'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDuration = 1.6 + Math.random() * 1.4 + 's';
+    piece.style.animationDelay = Math.random() * 0.3 + 's';
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 3200);
+  }
+}
+function toast(icon, title, desc) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<div class="ic">${icon}</div><div><div class="t">${title}</div><div class="d">${desc}</div></div>`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2600);
+}
+function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+function renderProgram(container) {
+  const s = STATE.settings;
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-title">Current 1RM</div>
+      <div class="row">
+        <div><label>Bench</label><input type="number" id="rm-bench" value="${s.oneRM.bench}"></div>
+        <div><label>Squat</label><input type="number" id="rm-squat" value="${s.oneRM.squat}"></div>
+        <div><label>Deadlift</label><input type="number" id="rm-deadlift" value="${s.oneRM.deadlift}"></div>
+      </div>
+      <button class="btn block secondary" id="save-1rm" style="margin-top:12px;">Save 1RM Values</button>
+      <button class="btn block" id="start-block" style="margin-top:8px;">Start New Block (new PRs)</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Block Position</div>
+      <div class="row">
+        <div><label>Block #</label><input type="number" id="pos-block" value="${s.blockNumber}"></div>
+        <div><label>Week</label><select id="pos-week">${s.weekPercents.map((w) => `<option value="${w.week}" ${w.week === s.currentWeek ? 'selected' : ''}>Week ${w.week}${w.isDeload ? ' (Deload)' : ''}</option>`).join('')}</select></div>
+        <div><label>Next Day</label><select id="pos-day">${STATE.program.days.map((d, i) => `<option value="${i}" ${i === s.currentDayIndex ? 'selected' : ''}>Day ${i + 1} ${d.name}</option>`).join('')}</select></div>
+      </div>
+      <button class="btn block secondary" id="save-pos" style="margin-top:12px;">Save Position</button>
+    </div>
+    <div class="card"><div class="card-title">8-Week Percentage Schedule</div><div id="week-table"></div></div>
+    <div class="card">
+      <div class="card-title">Weight Increment Suggestions</div>
+      <div class="row">
+        <div><label>Upper body +kg</label><input type="number" step="0.5" id="inc-upper" value="${s.weightIncrements.upper}"></div>
+        <div><label>Lower body +kg</label><input type="number" step="0.5" id="inc-lower" value="${s.weightIncrements.lower}"></div>
+      </div>
+      <label>Round calculated weights to nearest</label>
+      <select id="round-inc">
+        <option value="1" ${s.roundingIncrement === 1 ? 'selected' : ''}>1 kg</option>
+        <option value="2.5" ${s.roundingIncrement === 2.5 ? 'selected' : ''}>2.5 kg</option>
+        <option value="5" ${s.roundingIncrement === 5 ? 'selected' : ''}>5 kg</option>
+      </select>
+      <button class="btn block secondary" id="save-inc" style="margin-top:12px;">Save Increments</button>
+    </div>
+    <div id="days-editor"></div>
+    <button class="btn block secondary" id="add-day">+ Add Training Day</button>`;
+  renderWeekTable(container.querySelector('#week-table'));
+  renderDaysEditor(container.querySelector('#days-editor'));
+  container.querySelector('#save-1rm').addEventListener('click', async () => {
+    s.oneRM.bench = parseFloat(container.querySelector('#rm-bench').value) || s.oneRM.bench;
+    s.oneRM.squat = parseFloat(container.querySelector('#rm-squat').value) || s.oneRM.squat;
+    s.oneRM.deadlift = parseFloat(container.querySelector('#rm-deadlift').value) || s.oneRM.deadlift;
+    await saveSettings();
+    toast('✅', 'Saved', '1RM values updated.');
+  });
+  container.querySelector('#start-block').addEventListener('click', openStartNewBlockModal);
+  container.querySelector('#save-pos').addEventListener('click', async () => {
+    s.blockNumber = parseInt(container.querySelector('#pos-block').value, 10) || s.blockNumber;
+    s.currentWeek = parseInt(container.querySelector('#pos-week').value, 10);
+    s.currentDayIndex = parseInt(container.querySelector('#pos-day').value, 10);
+    await saveSettings();
+    toast('✅', 'Saved', 'Block position updated.');
+    render();
+  });
+  container.querySelector('#save-inc').addEventListener('click', async () => {
+    s.weightIncrements.upper = parseFloat(container.querySelector('#inc-upper').value) || s.weightIncrements.upper;
+    s.weightIncrements.lower = parseFloat(container.querySelector('#inc-lower').value) || s.weightIncrements.lower;
+    s.roundingIncrement = parseFloat(container.querySelector('#round-inc').value) || 2.5;
+    await saveSettings();
+    toast('✅', 'Saved', 'Increments updated.');
+  });
+  container.querySelector('#add-day').addEventListener('click', async () => {
+    STATE.program.days.push({ id: uid(), name: `Day ${STATE.program.days.length + 1}`, blocks: [{ category: 'New Block', exercises: [] }] });
+    await saveProgram();
+    render();
+  });
+}
+
+function renderWeekTable(container) {
+  container.innerHTML = STATE.settings.weekPercents.map((w, i) => `
+    <div class="row" style="align-items:center;margin-bottom:6px;">
+      <div style="flex:0 0 56px;font-family:var(--font-mono);font-weight:600;font-size:13px;">WK ${w.week}</div>
+      <input type="number" step="0.5" data-wk="${i}" data-field="percent" value="${w.percent}">
+      <label class="switch" style="flex:0 0 92px;margin:0;padding:0;font-size:11px;">Deload <input type="checkbox" data-wk="${i}" data-field="isDeload" ${w.isDeload ? 'checked' : ''}></label>
+    </div>`).join('');
+  container.addEventListener('change', async (e) => {
+    const inp = e.target.closest('[data-wk]');
+    if (!inp) return;
+    const i = parseInt(inp.dataset.wk, 10);
+    if (inp.dataset.field === 'percent') STATE.settings.weekPercents[i].percent = parseFloat(inp.value) || 0;
+    else STATE.settings.weekPercents[i].isDeload = inp.checked;
+    await saveSettings();
+  });
+}
+
+function renderDaysEditor(container) {
+  container.innerHTML = '';
+  STATE.program.days.forEach((day, dIdx) => {
+    const dayCard = document.createElement('div');
+    dayCard.className = 'card';
+    dayCard.innerHTML = `
+      <div class="row" style="align-items:center;">
+        <input type="text" value="${escapeHtml(day.name)}" class="day-name-input" style="font-weight:700;">
+        <button class="btn danger small" data-del-day style="flex:0 0 auto;">Delete Day</button>
+      </div>
+      <div class="blocks-wrap"></div>
+      <button class="btn secondary small" data-add-block style="margin-top:8px;">+ Add Category</button>`;
+    const blocksWrap = dayCard.querySelector('.blocks-wrap');
+    day.blocks.forEach((block, bIdx) => blocksWrap.appendChild(renderBlockEditor(day, dIdx, block, bIdx)));
+    dayCard.querySelector('.day-name-input').addEventListener('change', async (e) => { day.name = e.target.value; await saveProgram(); });
+    dayCard.querySelector('[data-del-day]').addEventListener('click', async () => {
+      if (!confirm(`Delete "${day.name}" and all its exercises?`)) return;
+      STATE.program.days.splice(dIdx, 1);
+      if (STATE.settings.currentDayIndex >= STATE.program.days.length) STATE.settings.currentDayIndex = 0;
+      await saveProgram(); await saveSettings(); render();
+    });
+    dayCard.querySelector('[data-add-block]').addEventListener('click', async () => { day.blocks.push({ category: 'New Category', exercises: [] }); await saveProgram(); render(); });
+    container.appendChild(dayCard);
+  });
+}
+
+function renderBlockEditor(day, dIdx, block, bIdx) {
+  const wrap = document.createElement('div');
+  wrap.style.marginTop = '12px';
+  wrap.innerHTML = `
+    <hr class="sep">
+    <div class="row" style="align-items:center;">
+      <input type="text" value="${escapeHtml(block.category)}" class="block-name-input" style="font-size:13px;font-weight:700;">
+      <button class="btn secondary small" data-del-block style="flex:0 0 auto;">✕</button>
+    </div>
+    <div class="ex-list"></div>
+    <button class="btn secondary small" data-add-ex style="margin-top:6px;">+ Add Exercise</button>`;
+  const exList = wrap.querySelector('.ex-list');
+  block.exercises.forEach((ex, eIdx) => exList.appendChild(renderExerciseEditor(block, ex, eIdx)));
+  wrap.querySelector('.block-name-input').addEventListener('change', async (e) => { block.category = e.target.value; await saveProgram(); });
+  wrap.querySelector('[data-del-block]').addEventListener('click', async () => {
+    if (!confirm(`Delete category "${block.category}"?`)) return;
+    day.blocks.splice(bIdx, 1); await saveProgram(); render();
+  });
+  wrap.querySelector('[data-add-ex]').addEventListener('click', async () => {
+    block.exercises.push({ id: uid(), name: 'New Exercise', category: block.category, sets: 3, reps: '10', region: 'upper', isMainLift: false, percentSource: null, percentMode: null, fixedPercent: null, weightIncrement: null, notes: '' });
+    await saveProgram(); render();
+  });
+  return wrap;
+}
+
+function renderExerciseEditor(block, ex, eIdx) {
+  const row = document.createElement('div');
+  row.style.cssText = 'background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;';
+  row.innerHTML = `
+    <div class="row"><input type="text" value="${escapeHtml(ex.name)}" data-f="name" placeholder="Exercise name"><button class="btn danger small" data-del style="flex:0 0 auto;">✕</button></div>
+    <div class="row" style="margin-top:6px;">
+      <div><label>Sets</label><input type="number" data-f="sets" value="${ex.sets}"></div>
+      <div><label>Reps</label><input type="text" data-f="reps" value="${ex.reps}" placeholder="e.g. 8-10"></div>
+      <div><label>Region</label><select data-f="region"><option value="upper" ${ex.region === 'upper' ? 'selected' : ''}>Upper</option><option value="lower" ${ex.region === 'lower' ? 'selected' : ''}>Lower</option></select></div>
+    </div>
+    <label class="switch"><span>Main lift (% of 1RM)</span><input type="checkbox" data-f="isMainLift" ${ex.isMainLift ? 'checked' : ''}></label>
+    <div class="pct-fields" style="${ex.isMainLift ? '' : 'display:none;'}">
+      <div class="row">
+        <div><label>Based on</label><select data-f="percentSource"><option value="bench" ${ex.percentSource === 'bench' ? 'selected' : ''}>Bench</option><option value="squat" ${ex.percentSource === 'squat' ? 'selected' : ''}>Squat</option><option value="deadlift" ${ex.percentSource === 'deadlift' ? 'selected' : ''}>Deadlift</option></select></div>
+        <div><label>Mode</label><select data-f="percentMode"><option value="weekly" ${ex.percentMode === 'weekly' ? 'selected' : ''}>Weekly %</option><option value="fixed" ${ex.percentMode === 'fixed' ? 'selected' : ''}>Fixed %</option></select></div>
+        <div class="fixed-pct-field" style="${ex.percentMode === 'fixed' ? '' : 'display:none;'}"><label>Fixed %</label><input type="number" step="0.5" data-f="fixedPercent" value="${ex.fixedPercent ?? ''}"></div>
+      </div>
+    </div>
+    <label>Notes (e.g. machine settings)</label>
+    <textarea rows="1" data-f="notes">${escapeHtml(ex.notes || '')}</textarea>`;
+  row.querySelectorAll('[data-f]').forEach((inp) => {
+    inp.addEventListener('change', async () => {
+      const f = inp.dataset.f;
+      if (f === 'isMainLift') {
+        ex.isMainLift = inp.checked;
+        row.querySelector('.pct-fields').style.display = ex.isMainLift ? '' : 'none';
+        if (ex.isMainLift && !ex.percentSource) ex.percentSource = 'bench';
+        if (ex.isMainLift && !ex.percentMode) ex.percentMode = 'weekly';
+      } else if (f === 'percentMode') {
+        ex.percentMode = inp.value;
+        row.querySelector('.fixed-pct-field').style.display = ex.percentMode === 'fixed' ? '' : 'none';
+      } else if (f === 'sets') { ex.sets = parseInt(inp.value, 10) || 1; }
+      else if (f === 'fixedPercent') { ex.fixedPercent = parseFloat(inp.value) || 0; }
+      else { ex[f] = inp.value; }
+      await saveProgram();
+    });
+  });
+  row.querySelector('[data-del]').addEventListener('click', async () => {
+    if (!confirm(`Delete "${ex.name}"?`)) return;
+    block.exercises.splice(eIdx, 1); await saveProgram(); render();
+  });
+  return row;
+}
+
+function openStartNewBlockModal() {
+  const s = STATE.settings;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop center';
+  backdrop.innerHTML = `
+    <div class="modal-sheet card-modal">
+      <div class="modal-title">Start New Block</div>
+      <div class="exercise-meta" style="margin-bottom:10px;">Enter your new 1RM / PR values. This resets you to Week 1.</div>
+      <label>Bench</label><input type="number" id="nb-bench" value="${s.oneRM.bench}">
+      <label>Squat</label><input type="number" id="nb-squat" value="${s.oneRM.squat}">
+      <label>Deadlift</label><input type="number" id="nb-deadlift" value="${s.oneRM.deadlift}">
+      <button class="btn block" id="nb-confirm" style="margin-top:14px;">Start Block ${s.blockNumber + 1}</button>
+      <button class="btn block secondary" id="nb-cancel" style="margin-top:8px;">Cancel</button>
+    </div>`;
+  document.body.appendChild(backdrop);
+  backdrop.querySelector('#nb-confirm').addEventListener('click', async () => {
+    s.oneRM.bench = parseFloat(backdrop.querySelector('#nb-bench').value) || s.oneRM.bench;
+    s.oneRM.squat = parseFloat(backdrop.querySelector('#nb-squat').value) || s.oneRM.squat;
+    s.oneRM.deadlift = parseFloat(backdrop.querySelector('#nb-deadlift').value) || s.oneRM.deadlift;
+    s.currentWeek = 1; s.blockNumber += 1;
+    await saveSettings();
+    backdrop.remove();
+    toast('🚀', 'New block started', `Block ${s.blockNumber}, Week 1.`);
+    render();
+  });
+  backdrop.querySelector('#nb-cancel').addEventListener('click', () => backdrop.remove());
+}
+
+async function renderProgress(container) {
+  const workouts = (await DB.getAll('workouts')).filter((w) => w.completedAt).sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+  const recovery = (await DB.getAll('recovery')).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const unlockedIds = new Set((await DB.getAll('achievements')).map((a) => a.id));
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-title">Trophy Case</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${BADGES.map((b) => `<div style="text-align:center;width:62px;opacity:${unlockedIds.has(b.id) ? '1' : '0.25'};"><div style="font-size:25px;">${b.icon}</div><div style="font-size:9px;color:var(--chalk-dim);margin-top:2px;">${b.title}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Estimated 1RM — Bench</div><canvas class="chart" id="chart-bench"></canvas></div>
+    <div class="card"><div class="card-title">Estimated 1RM — Squat</div><canvas class="chart" id="chart-squat"></canvas></div>
+    <div class="card"><div class="card-title">Estimated 1RM — Deadlift</div><canvas class="chart" id="chart-deadlift"></canvas></div>
+    <div class="card"><div class="card-title">Body Weight</div><canvas class="chart" id="chart-bw"></canvas></div>
+    <div class="card"><div class="card-title">Weekly Training Volume</div><canvas class="chart" id="chart-weekvol"></canvas></div>
+    <div class="card"><div class="card-title">Monthly Training Volume</div><canvas class="chart" id="chart-monthvol"></canvas></div>`;
+  const oneRMSeries = (liftKey) => {
+    const pts = [];
+    workouts.forEach((w) => { w.exercises.filter((e) => e.percentSource === liftKey).forEach((inst) => { inst.sets.filter((s) => s.done).forEach((s) => { pts.push({ value: estimate1RM(s.weight, s.actualReps) }); }); }); });
+    return pts.slice(-20);
+  };
+  drawLineChart(container.querySelector('#chart-bench'), oneRMSeries('bench'), { color: '#E8452F' });
+  drawLineChart(container.querySelector('#chart-squat'), oneRMSeries('squat'), { color: '#D9A63E' });
+  drawLineChart(container.querySelector('#chart-deadlift'), oneRMSeries('deadlift'), { color: '#3FA66B' });
+  const bwPts = recovery.filter((r) => r.bodyweight).slice(-20).map((r) => ({ value: r.bodyweight }));
+  drawLineChart(container.querySelector('#chart-bw'), bwPts, { color: '#3FA66B' });
+  const weekMap = {};
+  workouts.forEach((w) => { const key = isoWeekKey(new Date(w.completedAt)); const vol = w.exercises.reduce((sum, e) => sum + totalVolume(e.sets.filter((s) => s.done)), 0); weekMap[key] = (weekMap[key] || 0) + vol; });
+  drawBarChart(container.querySelector('#chart-weekvol'), Object.entries(weekMap).slice(-8).map(([k, v]) => ({ label: k.split('-W')[1], value: v })), { color: '#E8452F' });
+  const monthMap = {};
+  workouts.forEach((w) => { const key = monthKey(w.completedAt); const vol = w.exercises.reduce((sum, e) => sum + totalVolume(e.sets.filter((s) => s.done)), 0); monthMap[key] = (monthMap[key] || 0) + vol; });
+  drawBarChart(container.querySelector('#chart-monthvol'), Object.entries(monthMap).slice(-6).map(([k, v]) => ({ label: k.split('-')[1], value: v })), { color: '#D9A63E' });
+}
+
+async function renderRecovery(container) {
+  const all = (await DB.getAll('recovery')).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const today = all.find((r) => r.date === todayISO()) || { date: todayISO() };
+  const recent = all.slice(0, 5);
+  const poorSignal = recent.length >= 3 && recent.slice(0, 3).every((r) => (r.energy && r.energy <= 2) || (r.sleep && r.sleep < 6) || (r.soreness && r.soreness >= 4));
+  container.innerHTML = `
+    ${poorSignal ? `<div class="warning-banner"><div>⚠️</div><div>Your recovery markers have been low for the last 3 entries. Consider reducing training volume or intensity this week.</div></div>` : ''}
+    <div class="card">
+      <div class="card-title">Today — ${today.date}</div>
+      <div class="row"><div><label>Sleep (hrs)</label><input type="number" step="0.5" id="rc-sleep" value="${today.sleep ?? ''}"></div><div><label>Body weight (kg)</label><input type="number" step="0.1" id="rc-bw" value="${today.bodyweight ?? ''}"></div></div>
+      <div class="row"><div><label>Energy (1-5)</label><input type="number" min="1" max="5" id="rc-energy" value="${today.energy ?? ''}"></div><div><label>Mood (1-5)</label><input type="number" min="1" max="5" id="rc-mood" value="${today.mood ?? ''}"></div><div><label>Soreness (1-5)</label><input type="number" min="1" max="5" id="rc-soreness" value="${today.soreness ?? ''}"></div></div>
+      <div class="row"><div><label>Water (L)</label><input type="number" step="0.1" id="rc-water" value="${today.water ?? ''}"></div><div><label>Calories</label><input type="number" id="rc-cal" value="${today.calories ?? ''}"></div><div><label>Protein (g)</label><input type="number" id="rc-protein" value="${today.protein ?? ''}"></div></div>
+      <button class="btn block" id="rc-save" style="margin-top:12px;">Save Today's Recovery</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Entries</div>
+      ${recent.length ? recent.map((r) => `<div class="prev-line" style="margin-bottom:6px;"><strong style="color:var(--chalk);">${r.date}</strong> — Sleep ${r.sleep ?? '–'}h, Energy ${r.energy ?? '–'}/5, Mood ${r.mood ?? '–'}/5, BW ${r.bodyweight ?? '–'}kg</div>`).join('') : '<div class="empty-state"><div class="ic">🌙</div>No recovery entries yet.</div>'}
+    </div>`;
+  container.querySelector('#rc-save').addEventListener('click', async () => {
+    const entry = {
+      date: today.date,
+      sleep: parseFloat(container.querySelector('#rc-sleep').value) || null,
+      bodyweight: parseFloat(container.querySelector('#rc-bw').value) || null,
+      energy: parseInt(container.querySelector('#rc-energy').value, 10) || null,
+      mood: parseInt(container.querySelector('#rc-mood').value, 10) || null,
+      soreness: parseInt(container.querySelector('#rc-soreness').value, 10) || null,
+      water: parseFloat(container.querySelector('#rc-water').value) || null,
+      calories: parseFloat(container.querySelector('#rc-cal').value) || null,
+      protein: parseFloat(container.querySelector('#rc-protein').value) || null,
+    };
+    await DB.put('recovery', entry);
+    toast('✅', 'Saved', "Today's recovery logged.");
+    render();
+  });
+}
+
+function renderSettings(container) {
+  const s = STATE.settings;
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-title">Rest Timer</div>
+      <label>Default rest between sets (seconds)</label><input type="number" id="set-rest" value="${s.restSeconds}">
+      <label>Alert style</label>
+      <select id="set-alert"><option value="visual" ${s.timerAlertMode === 'visual' ? 'selected' : ''}>Visual only</option><option value="vibration" ${s.timerAlertMode === 'vibration' ? 'selected' : ''}>Vibration</option><option value="sound" ${s.timerAlertMode === 'sound' ? 'selected' : ''}>Sound + Vibration</option></select>
+      <button class="btn block secondary" id="save-rest" style="margin-top:12px;">Save</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Backup</div>
+      <div class="exercise-meta" style="margin-bottom:10px;">All data lives only on this device. Export a backup file regularly, especially before changing phones.</div>
+      <button class="btn block secondary" id="export-btn">⬇ Export Backup</button>
+      <label style="margin-top:10px;">Import backup file</label>
+      <input type="file" id="import-file" accept="application/json">
+    </div>
+    <div class="card"><div class="card-title">Danger Zone</div><button class="btn block danger" id="reset-btn">Erase All Data</button></div>
+    <div class="card"><div class="card-title">About</div><div class="exercise-meta">IronLog — personal powerlifting tracker. No ads, no accounts. Data is stored in this browser only (per-device, per-app); export a backup before switching phones or browsers.</div></div>`;
+  container.querySelector('#save-rest').addEventListener('click', async () => {
+    s.restSeconds = parseInt(container.querySelector('#set-rest').value, 10) || s.restSeconds;
+    s.timerAlertMode = container.querySelector('#set-alert').value;
+    await saveSettings();
+    toast('✅', 'Saved', 'Timer settings updated.');
+  });
+  container.querySelector('#export-btn').addEventListener('click', async () => {
+    const dump = await DB.exportAll();
+    const serializable = { ...dump, photos: [] };
+    for (const p of dump.photos) { const b64 = await blobToBase64(p.blob); serializable.photos.push({ exerciseId: p.exerciseId, savedAt: p.savedAt, dataUrl: b64 }); }
+    const json = JSON.stringify(serializable);
+    const downloads = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
+    if (!downloads) { toast('⚠️', 'Unavailable', 'File saving is not available in this view.'); return; }
+    try {
+      await downloads.save({ filename: `ironlog-backup-${todayISO()}.json`, data: json });
+      toast('✅', 'Saved', 'Backup file saved.');
+    } catch (err) {
+      if (err && err.code === 'declined') return;
+      toast('⚠️', 'Save failed', (err && err.message) || 'Could not save the backup file.');
+    }
+  });
+  container.querySelector('#import-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!confirm('This will replace all current data with the backup file. Continue?')) return;
+    const dump = JSON.parse(await file.text());
+    for (const p of dump.photos || []) { if (p.dataUrl) p.blob = await dataUrlToBlob(p.dataUrl); }
+    await DB.importAll(dump);
+    toast('✅', 'Imported', 'Backup restored. Reloading...');
+    setTimeout(() => location.reload(), 1000);
+  });
+  container.querySelector('#reset-btn').addEventListener('click', async () => {
+    if (!confirm('This permanently deletes ALL workouts, photos, and settings. Are you sure?')) return;
+    if (!confirm('Really sure? This cannot be undone.')) return;
+    indexedDB.deleteDatabase('ironlog');
+    location.reload();
+  });
+}
+
+function blobToBase64(blob) { return new Promise((resolve) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.readAsDataURL(blob); }); }
+async function dataUrlToBlob(dataUrl) { const res = await fetch(dataUrl); return res.blob(); }
+
+boot();
+</script>
