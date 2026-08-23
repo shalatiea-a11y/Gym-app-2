@@ -6,16 +6,18 @@
 
 <style>
 :root {
-  --ink: #141213;
-  --surface: #1E1B1C;
-  --surface-2: #282324;
-  --surface-3: #332D2F;
-  --line: #3D3638;
+  --ink: #141317;
+  --surface: #1E1C22;
+  --surface-2: #28252D;
+  --surface-3: #332F3A;
+  --line: #3D3944;
   --chalk: #F3EFE9;
-  --chalk-dim: #B4ABA6;
-  --chalk-faint: #786F6C;
-  --iron: #E8452F;
-  --iron-dim: #C13A27;
+  --chalk-dim: #B0A9B4;
+  --chalk-faint: #7A7482;
+  --accent: #8B5CF6;
+  --accent-dim: #6D3FD1;
+  --steel: #9AA5B1;
+  --wood: #7A5C42;
   --gold: #D9A63E;
   --green: #3FA66B;
   --amber: #E08A3C;
@@ -110,7 +112,7 @@ body { min-height: 100vh; }
   font-weight: 700;
   cursor: pointer;
   color: var(--ink);
-  background: var(--iron);
+  background: var(--accent);
 }
 .btn:active { transform: scale(0.97); }
 .btn.block { width: 100%; }
@@ -120,7 +122,7 @@ body { min-height: 100vh; }
   border: 1px solid var(--line);
 }
 .btn.success { background: var(--green); color: #08150e; }
-.btn.danger { background: var(--surface-2); color: var(--iron); border: 1px solid var(--iron-dim); }
+.btn.danger { background: var(--surface-2); color: var(--accent); border: 1px solid var(--accent-dim); }
 .btn.small { padding: 8px 12px; font-size: 12.5px; border-radius: 7px; }
 .btn:disabled { opacity: 0.5; }
 
@@ -136,7 +138,7 @@ input[type=text], input[type=number], input[type=date], select, textarea {
   font-size: 15px;
 }
 input[type=text], textarea, select { font-family: var(--font-body); }
-input:focus, textarea:focus, select:focus { outline: 2px solid var(--iron); outline-offset: -1px; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
@@ -172,7 +174,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--iron); outl
   letter-spacing: 0.04em;
 }
 .nav-btn .ic { font-size: 19px; }
-.nav-btn.active { color: var(--iron); }
+.nav-btn.active { color: var(--accent); }
 
 .deload-banner {
   background: rgba(224, 138, 60, 0.14);
@@ -191,7 +193,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--iron); outl
 .exercise-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .exercise-name { font-size: 17px; font-weight: 700; }
 .exercise-meta { font-size: 12.5px; color: var(--chalk-dim); margin-top: 2px; }
-.exercise-cat { font-size: 10.5px; color: var(--iron); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+.exercise-cat { font-size: 10.5px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
 
 .badge-pill {
   display: inline-flex;
@@ -201,31 +203,28 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--iron); outl
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(232, 69, 47, 0.15);
-  color: var(--iron);
-  border: 1px solid rgba(232, 69, 47, 0.35);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.set-row {
-  display: grid;
-  grid-template-columns: 22px 1fr 1fr 38px;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
-}
+.set-row { padding: 10px 0; border-top: 1px solid var(--line); }
 .set-row:first-of-type { border-top: none; }
-.set-num { font-family: var(--font-mono); font-weight: 600; color: var(--chalk-dim); text-align: center; }
-.set-row input { padding: 9px; text-align: center; }
+.set-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.set-num { font-family: var(--font-mono); font-weight: 700; color: var(--chalk-dim); font-size: 13px; }
+.set-row-fields { display: flex; gap: 8px; }
+.set-row-fields .stepper { flex: 1; min-width: 0; }
+.set-row input { padding: 9px 4px; text-align: center; font-size: 13.5px; }
 .set-check {
-  width: 36px; height: 36px;
-  border-radius: 8px;
+  width: 34px; height: 34px;
+  border-radius: 9px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--chalk-dim);
   font-size: 16px;
+  flex: 0 0 auto;
 }
 .set-check.done { background: var(--green); color: #08150e; border-color: transparent; }
 
@@ -312,7 +311,7 @@ canvas.chart { width: 100%; height: 160px; display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 40%, rgba(232,69,47,0.22), rgba(6,5,5,0.92));
+  background: radial-gradient(circle at 50% 40%, rgba(217,166,62,0.24), rgba(6,5,5,0.92));
   animation: fadeIn 0.2s ease;
 }
 .celebration-card {
@@ -386,7 +385,7 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
 .switch { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
 .switch span { font-size: 13px; font-weight: 500; color: var(--chalk); text-transform: none; letter-spacing: 0; }
 .switch input[type=checkbox] { width: 42px; height: 24px; appearance: none; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; position: relative; cursor: pointer; flex: 0 0 auto; }
-.switch input[type=checkbox]:checked { background: var(--iron); border-color: var(--iron); }
+.switch input[type=checkbox]:checked { background: var(--accent); border-color: var(--accent); }
 .switch input[type=checkbox]::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--chalk); top: 2px; left: 2px; transition: 0.2s; }
 .switch input[type=checkbox]:checked::after { left: 20px; }
 
@@ -394,13 +393,174 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
 .onboarding-wrap h1 { font-family: var(--font-display); font-size: 40px; letter-spacing: 0.02em; margin: 0 0 4px; line-height: 1; }
 .onboarding-wrap .sub { color: var(--chalk-dim); margin-bottom: 24px; font-size: 14px; }
 
-.wordmark-bar { width: 40px; height: 5px; background: var(--iron); border-radius: 3px; margin-bottom: 14px; }
+.wordmark-bar { width: 40px; height: 5px; background: var(--accent); border-radius: 3px; margin-bottom: 14px; }
+
+/* ---- background photo layer ---- */
+#bg-photo {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+  filter: brightness(0.55) saturate(1.05);
+}
+#app { position: relative; z-index: 1; }
+
+/* ---- logo mark ---- */
+.logo-mark { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.logo-mark svg { display: block; }
+.topbar-title-row { display: flex; align-items: center; gap: 10px; }
+
+/* ---- kg chip on weight inputs ---- */
+.field-with-chip { position: relative; flex: 1; min-width: 0; }
+.kg-chip {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.field-with-chip input { padding-left: 34px !important; text-align: left !important; }
+
+/* ---- stepper (+/- quick edit) ---- */
+.stepper { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.stepper-btn {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface-3);
+  color: var(--chalk);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stepper-btn:active { background: var(--accent); color: var(--ink); }
+.stepper input { min-width: 0; flex: 1; padding-left: 4px; padding-right: 4px; text-align: center; }
+
+/* ---- exercise pose icon ---- */
+.exercise-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.exercise-icon svg { width: 34px; height: 34px; color: var(--accent); }
+.exercise-head-row { display: flex; gap: 12px; align-items: flex-start; }
+
+/* ---- press / ripple effect ---- */
+@keyframes pressPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 18px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.btn.pressing { animation: pressPulse 0.5s ease-out; }
+
+/* ---- accordion (Program weeks) ---- */
+.accordion-item { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; overflow: hidden; background: var(--surface-2); }
+.accordion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  cursor: pointer;
+}
+.accordion-head .chev { transition: transform 0.2s ease; color: var(--chalk-dim); font-size: 12px; }
+.accordion-item.open .accordion-head .chev { transform: rotate(180deg); }
+.accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
+.accordion-item.open .accordion-body { max-height: 600px; }
+.accordion-body-inner { padding: 0 14px 14px; }
+.week-pill { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.02em; }
+.week-sub { font-size: 11px; color: var(--chalk-dim); font-family: var(--font-mono); margin-top: 2px; }
+
+.exercise-editor-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 2px;
+  cursor: pointer;
+}
+.exercise-editor-collapsed .name { font-weight: 600; font-size: 14px; }
+.exercise-editor-collapsed .meta { font-size: 11px; color: var(--chalk-dim); margin-top: 2px; }
+
+/* ---- FAQ ---- */
+.faq-item { border-top: 1px solid var(--line); }
+.faq-item:first-child { border-top: none; }
+.faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 2px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.faq-a { padding: 0 2px 12px; font-size: 12.5px; color: var(--chalk-dim); line-height: 1.5; display: none; }
+.faq-item.open .faq-a { display: block; }
+.faq-item.open .faq-q .chev { transform: rotate(180deg); }
+.faq-q .chev { transition: transform 0.2s ease; color: var(--chalk-dim); font-size: 11px; }
+
+/* ---- theme swatches ---- */
+.swatch-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+}
+.swatch.active { border-color: var(--chalk); }
+.swatch.active::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; font-weight: 900; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.streak-banner .num { font-family: var(--font-display); font-size: 26px; color: var(--gold); line-height: 1; }
+.streak-banner .lbl { font-size: 11.5px; color: var(--chalk-dim); }
 
 ::-webkit-scrollbar { display: none; }
 </style>
 
+<div id="bg-photo"></div>
 <div id="app">
-  <div class="screen" style="display:flex;align-items:center;justify-content:center;">
+  <div class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+    <svg width="44" height="44" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="16" cy="16" r="16" fill="var(--accent)"/>
+      <rect x="7" y="14.5" width="18" height="3" rx="1.5" fill="var(--ink)"/>
+      <circle cx="7" cy="16" r="4.2" fill="var(--ink)"/>
+      <circle cx="25" cy="16" r="4.2" fill="var(--ink)"/>
+      <circle cx="7" cy="16" r="1.6" fill="var(--gold)"/>
+      <circle cx="25" cy="16" r="1.6" fill="var(--gold)"/>
+    </svg>
     <div style="text-align:center;color:var(--chalk-dim);font-family:var(--font-display);font-size:22px;letter-spacing:0.04em;">LOADING IRONLOG…</div>
   </div>
 </div>
@@ -611,7 +771,8 @@ function defaultSettings() {
     onboardingComplete: false,
     prHistory: {},
     lastRecoveryWarningDismissedAt: null,
-    accent: 'iron',
+    accent: 'purple',
+    themeBackground: null,
   };
 }
 
@@ -804,7 +965,152 @@ function drawBarChart(canvas, points, opts = {}) {
 
 // ===================== app.js =====================
 const APP = document.getElementById('app');
+const BG_PHOTO = document.getElementById('bg-photo');
 const STATE = { settings: null, program: null, screen: 'today', draftWorkout: null, celebrationQueue: [] };
+
+function logoSvg(size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="16" fill="var(--accent)"/>
+    <rect x="7" y="14.5" width="18" height="3" rx="1.5" fill="var(--ink)"/>
+    <circle cx="7" cy="16" r="4.2" fill="var(--ink)"/>
+    <circle cx="25" cy="16" r="4.2" fill="var(--ink)"/>
+    <circle cx="7" cy="16" r="1.6" fill="var(--gold)"/>
+    <circle cx="25" cy="16" r="1.6" fill="var(--gold)"/>
+  </svg>`;
+}
+
+const ACCENT_THEMES = {
+  purple: { name: 'Purple', accent: '#8B5CF6', dim: '#6D3FD1' },
+  red: { name: 'Red', accent: '#E8452F', dim: '#C13A27' },
+  blue: { name: 'Blue', accent: '#4F8CFF', dim: '#3568C9' },
+  green: { name: 'Green', accent: '#22C58D', dim: '#1B9C70' },
+  gold: { name: 'Gold', accent: '#D9A63E', dim: '#B4842A' },
+};
+function applyAccent(name) {
+  const theme = ACCENT_THEMES[name] || ACCENT_THEMES.purple;
+  document.documentElement.style.setProperty('--accent', theme.accent);
+  document.documentElement.style.setProperty('--accent-dim', theme.dim);
+}
+function applyBackgroundPhoto(dataUrl) {
+  if (dataUrl) {
+    BG_PHOTO.style.backgroundImage = `url(${dataUrl})`;
+    BG_PHOTO.style.opacity = '0.28';
+  } else {
+    BG_PHOTO.style.opacity = '0';
+    BG_PHOTO.style.backgroundImage = '';
+  }
+}
+
+// ---- cartoon exercise pose icons (original vector art, not photos) ----
+const POSE_PATHS = {
+  bench: `<rect x="3" y="17.5" width="18" height="2" rx="1" fill="var(--wood)"/>
+    <circle cx="5.5" cy="16" r="2.1" fill="currentColor"/>
+    <rect x="7" y="14.6" width="9" height="3" rx="1.5" fill="currentColor"/>
+    <line x1="12" y1="14.6" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="4" y="5" width="16" height="2" rx="1" fill="var(--steel)"/>
+    <circle cx="5" cy="6" r="2.3" fill="var(--steel)"/><circle cx="19" cy="6" r="2.3" fill="var(--steel)"/>`,
+  squat: `<circle cx="12" cy="4.2" r="2.1" fill="currentColor"/>
+    <rect x="10.1" y="6.5" width="3.8" height="6.5" rx="1.9" fill="currentColor"/>
+    <path d="M11 12.5 L9.3 16 L10 20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13 12.5 L14.7 16 L14 20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="4" y="6.3" width="16" height="2" rx="1" fill="var(--steel)"/>
+    <circle cx="5" cy="7.3" r="2.1" fill="var(--steel)"/><circle cx="19" cy="7.3" r="2.1" fill="var(--steel)"/>`,
+  deadlift: `<circle cx="15.5" cy="5" r="2.1" fill="currentColor"/>
+    <path d="M14.3 7 L8.5 14.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M8.5 14.5 L7 20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M8.5 14.5 L12 19.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M13 8 L7.5 17" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    <rect x="2" y="18" width="10" height="2.2" rx="1.1" fill="var(--steel)"/>
+    <circle cx="4" cy="19.1" r="3" fill="var(--steel)"/>`,
+  row: `<circle cx="16.5" cy="6" r="2.1" fill="currentColor"/>
+    <path d="M15.5 8 L9.5 14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+    <path d="M9.5 14 L8 20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M9.5 14 L12.5 20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <path d="M13.5 9 L9.5 11 L6.5 8.5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="6.5" y1="8.5" x2="3.5" y2="5.5" stroke="var(--steel)" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="3" cy="5" r="1.3" fill="var(--steel)"/>`,
+  press: `<circle cx="12" cy="5.5" r="2.1" fill="currentColor"/>
+    <rect x="10.2" y="7.6" width="3.6" height="6" rx="1.8" fill="currentColor"/>
+    <line x1="11" y1="13.4" x2="10" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="13" y1="13.4" x2="14" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="10.6" y1="8.6" x2="7.5" y2="2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="13.4" y1="8.6" x2="16.5" y2="2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="4.5" y="1" width="15" height="2" rx="1" fill="var(--steel)"/>
+    <circle cx="5.5" cy="2" r="1.9" fill="var(--steel)"/><circle cx="18.5" cy="2" r="1.9" fill="var(--steel)"/>`,
+  curl: `<circle cx="12" cy="5" r="2.1" fill="currentColor"/>
+    <rect x="10.2" y="7.1" width="3.6" height="6.5" rx="1.8" fill="currentColor"/>
+    <line x1="11" y1="13.4" x2="10" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="13" y1="13.4" x2="14" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="10.3" y1="8" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M14 8 L16.3 11 L14.3 13.3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="12.8" y="12.6" width="3" height="1.4" rx="0.7" fill="var(--steel)"/>
+    <circle cx="13" cy="13.3" r="1" fill="var(--steel)"/><circle cx="15.6" cy="13.3" r="1" fill="var(--steel)"/>`,
+  cable: `<circle cx="12" cy="5.5" r="2.1" fill="currentColor"/>
+    <rect x="10.2" y="7.6" width="3.6" height="6" rx="1.8" fill="currentColor"/>
+    <line x1="11" y1="13.4" x2="10" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="13" y1="13.4" x2="14" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="10.4" y1="8.5" x2="5.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="13.6" y1="8.5" x2="18.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="5.5" y1="12" x2="5.5" y2="2" stroke="var(--steel)" stroke-width="1.4"/>
+    <line x1="18.5" y1="12" x2="18.5" y2="2" stroke="var(--steel)" stroke-width="1.4"/>
+    <circle cx="5.5" cy="2" r="1.3" fill="var(--steel)"/><circle cx="18.5" cy="2" r="1.3" fill="var(--steel)"/>`,
+  legmachine: `<rect x="2.5" y="15" width="9" height="2.4" rx="1" fill="var(--wood)"/>
+    <circle cx="7" cy="8.3" r="2" fill="currentColor"/>
+    <rect x="5.3" y="10.1" width="3.6" height="5.6" rx="1.7" fill="currentColor"/>
+    <path d="M9 15.6 L14.5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M14.5 15 L19.5 11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="20" y="5.5" width="3" height="13" fill="var(--steel)" rx="0.6"/>
+    <line x1="20" y1="9" x2="23" y2="9" stroke="var(--ink)" stroke-width="0.8"/>
+    <line x1="20" y1="12.5" x2="23" y2="12.5" stroke="var(--ink)" stroke-width="0.8"/>
+    <line x1="20" y1="16" x2="23" y2="16" stroke="var(--ink)" stroke-width="0.8"/>`,
+  calf: `<circle cx="12" cy="4.5" r="2.1" fill="currentColor"/>
+    <rect x="10.2" y="6.6" width="3.6" height="7" rx="1.8" fill="currentColor"/>
+    <line x1="11" y1="13.4" x2="10.6" y2="19" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="13" y1="13.4" x2="13.4" y2="19" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <rect x="6" y="19.4" width="12" height="1.8" rx="0.9" fill="var(--wood)"/>
+    <path d="M9 17.5 L9 15.3" stroke="var(--gold)" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M7.6 16.5 L9 15.1 L10.4 16.5" stroke="var(--gold)" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  generic: `<circle cx="12" cy="6" r="2.1" fill="currentColor"/>
+    <rect x="10.2" y="8.1" width="3.6" height="6.5" rx="1.8" fill="currentColor"/>
+    <line x1="11" y1="14.4" x2="10" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="13" y1="14.4" x2="14" y2="20" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+    <line x1="10.2" y1="9" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="13.8" y1="9" x2="18" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <rect x="4" y="11" width="4" height="2.2" rx="1" fill="var(--steel)"/>
+    <rect x="16" y="11" width="4" height="2.2" rx="1" fill="var(--steel)"/>`,
+};
+
+const POSE_BY_EXERCISE_ID = {
+  'd1-bench': 'bench', 'd1-incline-machine': 'press', 'd1-flat-machine': 'bench', 'd1-cable-fly': 'cable',
+  'd1-smith-shoulder': 'press', 'd1-lateral-raise': 'cable', 'd1-triceps-pushdown': 'cable', 'd1-leg-extension': 'legmachine',
+  'd2-cs-row': 'row', 'd2-single-arm-row': 'row', 'd2-rear-delt': 'cable', 'd2-cable-curl': 'curl', 'd2-hammer-curl': 'curl', 'd2-leg-curl': 'legmachine',
+  'd3-squat': 'squat', 'd3-hip-adduction': 'legmachine', 'd3-calf-raise': 'calf',
+  'd4-bench': 'bench', 'd4-cs-row': 'row', 'd4-single-arm-row': 'row', 'd4-preacher-curl': 'curl',
+  'd5-deadlift': 'deadlift', 'd5-seated-leg-curl': 'legmachine',
+};
+function guessPose(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('bench') || n.includes('chest press') || n.includes('fly') === false && n.includes('press') && n.includes('leg') === false && n.includes('should')) return n.includes('should') ? 'press' : 'bench';
+  if (n.includes('squat')) return 'squat';
+  if (n.includes('deadlift')) return 'deadlift';
+  if (n.includes('row')) return 'row';
+  if (n.includes('curl') && n.includes('leg')) return 'legmachine';
+  if (n.includes('curl')) return 'curl';
+  if (n.includes('calf')) return 'calf';
+  if (n.includes('leg') || n.includes('adduction') || n.includes('extension')) return 'legmachine';
+  if (n.includes('fly') || n.includes('raise') || n.includes('pushdown') || n.includes('pulldown') || n.includes('cable')) return 'cable';
+  if (n.includes('press')) return 'press';
+  return 'generic';
+}
+function poseFor(exerciseId, name) {
+  return POSE_BY_EXERCISE_ID[exerciseId] || guessPose(name);
+}
+function exerciseIconHtml(exerciseId, name, size) {
+  const pose = poseFor(exerciseId, name);
+  const path = POSE_PATHS[pose] || POSE_PATHS.generic;
+  const px = size || 52;
+  return `<div class="exercise-icon" style="width:${px}px;height:${px}px;"><svg viewBox="0 0 24 24" style="width:${Math.round(px * 0.66)}px;height:${Math.round(px * 0.66)}px;">${path}</svg></div>`;
+}
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const fmt1 = (n) => (Math.round(n * 10) / 10).toString();
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -814,8 +1120,12 @@ async function boot() {
   let program = await DB.get('program', 'program');
   if (!settings) { settings = defaultSettings(); await DB.put('settings', settings); }
   if (!program) { program = defaultProgram(); await DB.put('program', program); }
+  if (!settings.accent || settings.accent === 'iron' || !ACCENT_THEMES[settings.accent]) settings.accent = settings.accent === 'iron' ? 'red' : 'purple';
+  if (settings.themeBackground === undefined) settings.themeBackground = null;
   STATE.settings = settings;
   STATE.program = program;
+  applyAccent(settings.accent);
+  applyBackgroundPhoto(settings.themeBackground);
   const workouts = await DB.getAll('workouts');
   STATE.draftWorkout = workouts.find((w) => !w.completedAt) || null;
   render();
@@ -859,7 +1169,7 @@ function titleForScreen() {
     settings: ['Settings', 'APP PREFERENCES & BACKUP'],
   };
   const [t, s] = map[STATE.screen];
-  return `<div><h1>${t}</h1><div class="sub">${s}</div></div>`;
+  return `<div class="topbar-title-row"><div class="logo-mark">${logoSvg(30)}</div><div><h1>${t}</h1><div class="sub">${s}</div></div></div>`;
 }
 
 function renderScreenBody(container) {
@@ -875,7 +1185,7 @@ function renderOnboarding() {
   wrap.className = 'onboarding-wrap';
   const s = STATE.settings;
   wrap.innerHTML = `
-    <div class="wordmark-bar"></div>
+    <div style="margin-bottom:14px;">${logoSvg(48)}</div>
     <h1>IRONLOG</h1>
     <div class="sub">Set your starting numbers. You can change all of this later.</div>
     <div class="card">
@@ -986,10 +1296,14 @@ async function renderToday(container) {
         <div class="exercise-meta" style="margin:8px 0 14px;">${day.blocks.flatMap((b) => b.exercises.map((e) => e.name)).join(' · ')}</div>
         <button class="btn block" id="start-workout">Start Workout</button>
       </div>`;
-    container.querySelector('#start-workout').addEventListener('click', async () => {
+    const startBtn = container.querySelector('#start-workout');
+    startBtn.addEventListener('click', async () => {
+      startBtn.classList.add('pressing');
+      startBtn.disabled = true;
+      startBtn.textContent = 'Loading workout…';
       STATE.draftWorkout = await buildWorkout(dayIdx);
       await persistDraft();
-      render();
+      setTimeout(() => render(), 260);
     });
     return;
   }
@@ -1014,7 +1328,8 @@ function renderExerciseCard(inst, exIdx) {
     : `Target: ${inst.repsDisplay} reps — enter your own weight`;
   card.innerHTML = `
     <div class="exercise-cat">${inst.category}</div>
-    <div class="exercise-head">
+    <div class="exercise-head-row">
+      ${exerciseIconHtml(inst.exerciseId, inst.name, 52)}
       <div>
         <div class="exercise-name">${inst.name}${inst.isMainLift ? ' <span class="badge-pill">Main Lift</span>' : ''}</div>
         <div class="exercise-meta">${targetLine}</div>
@@ -1031,6 +1346,19 @@ function renderExerciseCard(inst, exIdx) {
   `;
   renderPhotoZone(card.querySelector('.photo-zone'), inst.exerciseId);
   card.querySelector('.sets-wrap').addEventListener('click', (e) => {
+    const stepBtn = e.target.closest('.stepper-btn');
+    if (stepBtn) {
+      const si = parseInt(stepBtn.dataset.set, 10);
+      const field = stepBtn.dataset.field;
+      const dir = stepBtn.dataset.dir === 'up' ? 1 : -1;
+      const step = field === 'weight' ? (STATE.settings.roundingIncrement || 2.5) : 1;
+      const cur = inst.sets[si][field] ?? 0;
+      const next = Math.max(0, Math.round((cur + dir * step) * 100) / 100);
+      inst.sets[si][field] = next;
+      persistDraft();
+      render();
+      return;
+    }
     const btn = e.target.closest('.set-check');
     if (!btn) return;
     onToggleSet(exIdx, parseInt(btn.dataset.set, 10), card, inst);
@@ -1049,56 +1377,64 @@ function renderExerciseCard(inst, exIdx) {
 
 function renderSetRow(s, si) {
   return `<div class="set-row">
-    <div class="set-num">${si + 1}</div>
-    <input type="number" step="0.5" placeholder="kg" data-field="weight" data-set="${si}" value="${s.weight ?? ''}">
-    <input type="number" placeholder="reps (target ${s.targetReps})" data-field="actualReps" data-set="${si}" value="${s.actualReps ?? ''}">
-    <button class="set-check ${s.done ? 'done' : ''}" data-set="${si}">${s.done ? '✓' : ''}</button>
+    <div class="set-row-head">
+      <div class="set-num">SET ${si + 1}${s.targetReps ? ` · target ${s.targetReps}` : ''}</div>
+      <button class="set-check ${s.done ? 'done' : ''}" data-set="${si}">${s.done ? '✓' : ''}</button>
+    </div>
+    <div class="set-row-fields">
+    <div class="stepper">
+      <button class="stepper-btn" data-set="${si}" data-field="weight" data-dir="down" type="button">−</button>
+      <div class="field-with-chip"><span class="kg-chip">KG</span><input type="number" step="0.5" data-field="weight" data-set="${si}" value="${s.weight ?? ''}"></div>
+      <button class="stepper-btn" data-set="${si}" data-field="weight" data-dir="up" type="button">+</button>
+    </div>
+    <div class="stepper">
+      <button class="stepper-btn" data-set="${si}" data-field="actualReps" data-dir="down" type="button">−</button>
+      <input type="number" placeholder="reps" data-field="actualReps" data-set="${si}" value="${s.actualReps ?? ''}">
+      <button class="stepper-btn" data-set="${si}" data-field="actualReps" data-dir="up" type="button">+</button>
+    </div>
+    </div>
   </div>`;
 }
 
 async function onToggleSet(exIdx, si, cardEl, inst) {
   const set = inst.sets[si];
   set.done = !set.done;
-  if (set.done && (set.actualReps == null || set.weight == null)) {
-    toast('⚠️', 'Missing data', 'Enter weight and reps before checking off a set.');
-    set.done = false;
-    return;
-  }
   await persistDraft();
   if (set.done) {
-    checkMiniPr(inst);
-    const exceeded = checkExceededTarget(set.targetReps, set.actualReps);
-    const isLastSet = si === inst.sets.length - 1;
-    if (exceeded && isLastSet) {
-      const inc = suggestIncrease(inst.region, STATE.settings.weightIncrements);
-      inst.suggestion = `Great job! You exceeded the target by ${exceeded.exceededBy} rep${exceeded.exceededBy > 1 ? 's' : ''}. This weight may be too light. Consider +${inc} kg next time.`;
-      await persistDraft();
+    if (set.weight != null && set.actualReps != null) {
+      checkMiniPr(inst, set);
+      const exceeded = checkExceededTarget(set.targetReps, set.actualReps);
+      const isLastSet = si === inst.sets.length - 1;
+      if (exceeded && isLastSet) {
+        const inc = suggestIncrease(inst.region, STATE.settings.weightIncrements);
+        inst.suggestion = `Great job! You exceeded the target by ${exceeded.exceededBy} rep${exceeded.exceededBy > 1 ? 's' : ''}. This weight may be too light. Consider +${inc} kg next time.`;
+        await persistDraft();
+      }
     }
     openRestTimer();
   }
   render();
 }
 
-function checkMiniPr(inst) {
+function checkMiniPr(inst, set) {
   const key = liftKeyFor(inst);
   const hist = STATE.settings.prHistory[key] || { maxWeight: 0, maxReps: 0, best1RM: 0, maxVolume: 0 };
-  const doneSets = inst.sets.filter((s) => s.done);
-  const vol = totalVolume(doneSets.map((s) => ({ weight: s.weight, actualReps: s.actualReps })));
-  const lastSet = doneSets[doneSets.length - 1];
-  const est1rm = estimate1RM(lastSet.weight, lastSet.actualReps);
+  const doneSets = inst.sets.filter((s) => s.done && s.weight != null && s.actualReps != null);
+  const vol = totalVolume(doneSets);
+  const est1rm = estimate1RM(set.weight, set.actualReps);
   let hit = null;
-  if (lastSet.weight > hist.maxWeight) hit = 'weight';
+  if (set.weight > hist.maxWeight) hit = 'weight';
   else if (est1rm > hist.best1RM) hit = '1rm';
   else if (vol > hist.maxVolume) hit = 'volume';
-  hist.maxWeight = Math.max(hist.maxWeight, lastSet.weight);
-  hist.maxReps = Math.max(hist.maxReps, lastSet.actualReps);
+  hist.maxWeight = Math.max(hist.maxWeight, set.weight);
+  hist.maxReps = Math.max(hist.maxReps, set.actualReps);
   hist.best1RM = Math.max(hist.best1RM, est1rm);
   hist.maxVolume = Math.max(hist.maxVolume, vol);
   STATE.settings.prHistory[key] = hist;
   saveSettings();
   if (hit) {
     inst._prEventsThisSession = inst._prEventsThisSession || [];
-    inst._prEventsThisSession.push({ liftKey: key, type: hit, value: lastSet.weight });
+    inst._prEventsThisSession.push({ liftKey: key, type: hit, value: set.weight });
     toast('🔥', 'New PR!', `${inst.name}: new ${hit === '1rm' ? 'estimated 1RM' : hit} PR.`);
   }
 }
@@ -1261,6 +1597,18 @@ function toast(icon, title, desc) {
 }
 function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
+function computeWeekPreview(weekNumber) {
+  const wp = STATE.settings.weekPercents.find((w) => w.week === weekNumber) || STATE.settings.weekPercents[0];
+  const rnd = STATE.settings.roundingIncrement;
+  return {
+    percent: wp.percent,
+    isDeload: wp.isDeload,
+    bench: workingWeight(STATE.settings.oneRM.bench, wp.percent, rnd),
+    squat: workingWeight(STATE.settings.oneRM.squat, wp.percent, rnd),
+    deadlift: workingWeight(STATE.settings.oneRM.deadlift, wp.percent, rnd),
+  };
+}
+
 function renderProgram(container) {
   const s = STATE.settings;
   container.innerHTML = `
@@ -1283,7 +1631,10 @@ function renderProgram(container) {
       </div>
       <button class="btn block secondary" id="save-pos" style="margin-top:12px;">Save Position</button>
     </div>
-    <div class="card"><div class="card-title">8-Week Percentage Schedule</div><div id="week-table"></div></div>
+    <div class="card">
+      <div class="card-title">8-Week Plan — Tap a Week to Preview</div>
+      <div id="week-accordion"></div>
+    </div>
     <div class="card">
       <div class="card-title">Weight Increment Suggestions</div>
       <div class="row">
@@ -1298,9 +1649,10 @@ function renderProgram(container) {
       </select>
       <button class="btn block secondary" id="save-inc" style="margin-top:12px;">Save Increments</button>
     </div>
+    <div class="card-title" style="margin:4px 2px 8px;">Days &amp; Exercises — tap an exercise to edit it</div>
     <div id="days-editor"></div>
     <button class="btn block secondary" id="add-day">+ Add Training Day</button>`;
-  renderWeekTable(container.querySelector('#week-table'));
+  renderWeekAccordion(container.querySelector('#week-accordion'));
   renderDaysEditor(container.querySelector('#days-editor'));
   container.querySelector('#save-1rm').addEventListener('click', async () => {
     s.oneRM.bench = parseFloat(container.querySelector('#rm-bench').value) || s.oneRM.bench;
@@ -1308,6 +1660,7 @@ function renderProgram(container) {
     s.oneRM.deadlift = parseFloat(container.querySelector('#rm-deadlift').value) || s.oneRM.deadlift;
     await saveSettings();
     toast('✅', 'Saved', '1RM values updated.');
+    renderWeekAccordion(container.querySelector('#week-accordion'));
   });
   container.querySelector('#start-block').addEventListener('click', openStartNewBlockModal);
   container.querySelector('#save-pos').addEventListener('click', async () => {
@@ -1324,6 +1677,7 @@ function renderProgram(container) {
     s.roundingIncrement = parseFloat(container.querySelector('#round-inc').value) || 2.5;
     await saveSettings();
     toast('✅', 'Saved', 'Increments updated.');
+    renderWeekAccordion(container.querySelector('#week-accordion'));
   });
   container.querySelector('#add-day').addEventListener('click', async () => {
     STATE.program.days.push({ id: uid(), name: `Day ${STATE.program.days.length + 1}`, blocks: [{ category: 'New Block', exercises: [] }] });
@@ -1332,20 +1686,41 @@ function renderProgram(container) {
   });
 }
 
-function renderWeekTable(container) {
-  container.innerHTML = STATE.settings.weekPercents.map((w, i) => `
-    <div class="row" style="align-items:center;margin-bottom:6px;">
-      <div style="flex:0 0 56px;font-family:var(--font-mono);font-weight:600;font-size:13px;">WK ${w.week}</div>
-      <input type="number" step="0.5" data-wk="${i}" data-field="percent" value="${w.percent}">
-      <label class="switch" style="flex:0 0 92px;margin:0;padding:0;font-size:11px;">Deload <input type="checkbox" data-wk="${i}" data-field="isDeload" ${w.isDeload ? 'checked' : ''}></label>
-    </div>`).join('');
+function renderWeekAccordion(container) {
+  container.innerHTML = STATE.settings.weekPercents.map((w) => {
+    const preview = computeWeekPreview(w.week);
+    return `
+    <div class="accordion-item" data-week-item="${w.week}">
+      <div class="accordion-head">
+        <div><div class="week-pill">WEEK ${w.week}</div><div class="week-sub">${w.isDeload ? 'DELOAD · ' : ''}${w.percent}% of 1RM</div></div>
+        <span class="chev">▾</span>
+      </div>
+      <div class="accordion-body"><div class="accordion-body-inner">
+        <div class="stat-grid" style="margin-bottom:12px;">
+          <div class="stat-tile"><div class="v">${fmt1(preview.bench)}</div><div class="l">Bench kg</div></div>
+          <div class="stat-tile"><div class="v">${fmt1(preview.squat)}</div><div class="l">Squat kg</div></div>
+          <div class="stat-tile"><div class="v">${fmt1(preview.deadlift)}</div><div class="l">Deadlift kg</div></div>
+        </div>
+        <label>Percent of 1RM this week</label>
+        <input type="number" step="0.5" data-week-field="percent" data-week="${w.week}" value="${w.percent}">
+        <label class="switch"><span>Deload week</span><input type="checkbox" data-week-field="isDeload" data-week="${w.week}" ${w.isDeload ? 'checked' : ''}></label>
+      </div></div>
+    </div>`;
+  }).join('');
+  container.querySelectorAll('.accordion-head').forEach((head) => {
+    head.addEventListener('click', () => head.closest('.accordion-item').classList.toggle('open'));
+  });
   container.addEventListener('change', async (e) => {
-    const inp = e.target.closest('[data-wk]');
+    const inp = e.target.closest('[data-week-field]');
     if (!inp) return;
-    const i = parseInt(inp.dataset.wk, 10);
-    if (inp.dataset.field === 'percent') STATE.settings.weekPercents[i].percent = parseFloat(inp.value) || 0;
-    else STATE.settings.weekPercents[i].isDeload = inp.checked;
+    const wk = parseInt(inp.dataset.week, 10);
+    const entry = STATE.settings.weekPercents.find((w) => w.week === wk);
+    if (inp.dataset.weekField === 'percent') entry.percent = parseFloat(inp.value) || 0;
+    else entry.isDeload = inp.checked;
     await saveSettings();
+    renderWeekAccordion(container);
+    const reopened = container.querySelector(`[data-week-item="${wk}"]`);
+    if (reopened) reopened.classList.add('open');
   });
 }
 
@@ -1401,47 +1776,86 @@ function renderBlockEditor(day, dIdx, block, bIdx) {
 }
 
 function renderExerciseEditor(block, ex, eIdx) {
-  const row = document.createElement('div');
-  row.style.cssText = 'background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;';
-  row.innerHTML = `
-    <div class="row"><input type="text" value="${escapeHtml(ex.name)}" data-f="name" placeholder="Exercise name"><button class="btn danger small" data-del style="flex:0 0 auto;">✕</button></div>
-    <div class="row" style="margin-top:6px;">
-      <div><label>Sets</label><input type="number" data-f="sets" value="${ex.sets}"></div>
-      <div><label>Reps</label><input type="text" data-f="reps" value="${ex.reps}" placeholder="e.g. 8-10"></div>
-      <div><label>Region</label><select data-f="region"><option value="upper" ${ex.region === 'upper' ? 'selected' : ''}>Upper</option><option value="lower" ${ex.region === 'lower' ? 'selected' : ''}>Lower</option></select></div>
-    </div>
-    <label class="switch"><span>Main lift (% of 1RM)</span><input type="checkbox" data-f="isMainLift" ${ex.isMainLift ? 'checked' : ''}></label>
-    <div class="pct-fields" style="${ex.isMainLift ? '' : 'display:none;'}">
-      <div class="row">
-        <div><label>Based on</label><select data-f="percentSource"><option value="bench" ${ex.percentSource === 'bench' ? 'selected' : ''}>Bench</option><option value="squat" ${ex.percentSource === 'squat' ? 'selected' : ''}>Squat</option><option value="deadlift" ${ex.percentSource === 'deadlift' ? 'selected' : ''}>Deadlift</option></select></div>
-        <div><label>Mode</label><select data-f="percentMode"><option value="weekly" ${ex.percentMode === 'weekly' ? 'selected' : ''}>Weekly %</option><option value="fixed" ${ex.percentMode === 'fixed' ? 'selected' : ''}>Fixed %</option></select></div>
-        <div class="fixed-pct-field" style="${ex.percentMode === 'fixed' ? '' : 'display:none;'}"><label>Fixed %</label><input type="number" step="0.5" data-f="fixedPercent" value="${ex.fixedPercent ?? ''}"></div>
+  const wrap = document.createElement('div');
+  wrap.className = 'accordion-item';
+  wrap.style.marginTop = '8px';
+  wrap.innerHTML = `
+    <div class="accordion-head">
+      <div class="exercise-head-row" style="align-items:center;">
+        ${exerciseIconHtml(ex.id, ex.name, 40)}
+        <div>
+          <div class="name">${escapeHtml(ex.name)}</div>
+          <div class="meta">${ex.sets} × ${escapeHtml(ex.reps)}${ex.isMainLift ? ' · Main lift' : ''}</div>
+        </div>
       </div>
+      <span class="chev">▾</span>
     </div>
-    <label>Notes (e.g. machine settings)</label>
-    <textarea rows="1" data-f="notes">${escapeHtml(ex.notes || '')}</textarea>`;
-  row.querySelectorAll('[data-f]').forEach((inp) => {
+    <div class="accordion-body"><div class="accordion-body-inner">
+      <label>Exercise name</label><input type="text" value="${escapeHtml(ex.name)}" data-f="name">
+      <div class="row" style="margin-top:6px;">
+        <div><label>Sets</label>
+          <div class="stepper">
+            <button class="stepper-btn" data-mini-step="sets" data-dir="down" type="button">−</button>
+            <input type="number" data-f="sets" value="${ex.sets}">
+            <button class="stepper-btn" data-mini-step="sets" data-dir="up" type="button">+</button>
+          </div>
+        </div>
+        <div><label>Reps</label><input type="text" data-f="reps" value="${ex.reps}" placeholder="e.g. 8-10"></div>
+        <div><label>Region</label><select data-f="region"><option value="upper" ${ex.region === 'upper' ? 'selected' : ''}>Upper</option><option value="lower" ${ex.region === 'lower' ? 'selected' : ''}>Lower</option></select></div>
+      </div>
+      <label class="switch"><span>Main lift (% of 1RM)</span><input type="checkbox" data-f="isMainLift" ${ex.isMainLift ? 'checked' : ''}></label>
+      <div class="pct-fields" style="${ex.isMainLift ? '' : 'display:none;'}">
+        <div class="row">
+          <div><label>Based on</label><select data-f="percentSource"><option value="bench" ${ex.percentSource === 'bench' ? 'selected' : ''}>Bench</option><option value="squat" ${ex.percentSource === 'squat' ? 'selected' : ''}>Squat</option><option value="deadlift" ${ex.percentSource === 'deadlift' ? 'selected' : ''}>Deadlift</option></select></div>
+          <div><label>Mode</label><select data-f="percentMode"><option value="weekly" ${ex.percentMode === 'weekly' ? 'selected' : ''}>Weekly %</option><option value="fixed" ${ex.percentMode === 'fixed' ? 'selected' : ''}>Fixed %</option></select></div>
+          <div class="fixed-pct-field" style="${ex.percentMode === 'fixed' ? '' : 'display:none;'}"><label>Fixed %</label><input type="number" step="0.5" data-f="fixedPercent" value="${ex.fixedPercent ?? ''}"></div>
+        </div>
+      </div>
+      <label>Notes (e.g. machine settings)</label>
+      <textarea rows="1" data-f="notes">${escapeHtml(ex.notes || '')}</textarea>
+      <button class="btn danger small block" data-del style="margin-top:10px;">Delete Exercise</button>
+    </div></div>`;
+  wrap.querySelector('.accordion-head').addEventListener('click', () => wrap.classList.toggle('open'));
+  const refreshSummary = () => {
+    wrap.querySelector('.accordion-head .name').textContent = ex.name;
+    wrap.querySelector('.accordion-head .meta').textContent = `${ex.sets} × ${ex.reps}${ex.isMainLift ? ' · Main lift' : ''}`;
+  };
+  wrap.querySelectorAll('[data-f]').forEach((inp) => {
     inp.addEventListener('change', async () => {
       const f = inp.dataset.f;
       if (f === 'isMainLift') {
         ex.isMainLift = inp.checked;
-        row.querySelector('.pct-fields').style.display = ex.isMainLift ? '' : 'none';
+        wrap.querySelector('.pct-fields').style.display = ex.isMainLift ? '' : 'none';
         if (ex.isMainLift && !ex.percentSource) ex.percentSource = 'bench';
         if (ex.isMainLift && !ex.percentMode) ex.percentMode = 'weekly';
       } else if (f === 'percentMode') {
         ex.percentMode = inp.value;
-        row.querySelector('.fixed-pct-field').style.display = ex.percentMode === 'fixed' ? '' : 'none';
-      } else if (f === 'sets') { ex.sets = parseInt(inp.value, 10) || 1; }
+        wrap.querySelector('.fixed-pct-field').style.display = ex.percentMode === 'fixed' ? '' : 'none';
+      } else if (f === 'sets') { ex.sets = parseInt(inp.value, 10) || 1; inp.value = ex.sets; }
       else if (f === 'fixedPercent') { ex.fixedPercent = parseFloat(inp.value) || 0; }
       else { ex[f] = inp.value; }
+      refreshSummary();
       await saveProgram();
     });
   });
-  row.querySelector('[data-del]').addEventListener('click', async () => {
+  wrap.querySelector('[data-mini-step="sets"][data-dir="up"]').addEventListener('click', async () => {
+    ex.sets = (ex.sets || 1) + 1;
+    wrap.querySelector('[data-f="sets"]').value = ex.sets;
+    refreshSummary();
+    await saveProgram();
+  });
+  wrap.querySelector('[data-mini-step="sets"][data-dir="down"]').addEventListener('click', async () => {
+    ex.sets = Math.max(1, (ex.sets || 1) - 1);
+    wrap.querySelector('[data-f="sets"]').value = ex.sets;
+    refreshSummary();
+    await saveProgram();
+  });
+  wrap.querySelector('[data-del]').addEventListener('click', async (e) => {
+    e.stopPropagation();
     if (!confirm(`Delete "${ex.name}"?`)) return;
     block.exercises.splice(eIdx, 1); await saveProgram(); render();
   });
-  return row;
+  return wrap;
 }
 
 function openStartNewBlockModal() {
@@ -1543,9 +1957,33 @@ async function renderRecovery(container) {
   });
 }
 
-function renderSettings(container) {
+const FAQ_ITEMS = [
+  { q: 'How is my working weight calculated?', a: 'Each main lift takes your current 1RM and multiplies it by that week\'s percentage (or a fixed percentage for exercises set that way), then rounds to the increment you chose in Program → Weight Increment Suggestions.' },
+  { q: 'What happens during a deload week?', a: 'Whatever week is flagged "Deload" in Program uses a much lower percentage (50% by default) and is clearly labeled on the Today screen. It\'s meant for recovery and technique work, not new PRs.' },
+  { q: 'How do I start a new training block?', a: 'Go to Program → Start New Block. Enter your new 1RM / PR values there — it resets you to Week 1 with the new numbers.' },
+  { q: 'Why can I tap Done without entering weight or reps?', a: 'For days you\'re too tired to finish everything — Done just marks the set as attempted. Sets with no weight/reps logged don\'t count toward PRs or volume, so your stats stay accurate.' },
+  { q: 'Where is my data and are my photos private?', a: 'Everything — workouts, photos, settings — is stored only in this browser, on this device. Nothing is uploaded anywhere. Use Export Backup before switching phones or clearing browser data.' },
+  { q: 'How are PRs and achievements detected?', a: 'After each completed set, IronLog compares the weight, estimated 1RM, and session volume against your best-ever numbers for that lift. Beating one triggers a PR toast; certain milestones (workout counts, streaks, named lift thresholds) unlock trophies with a celebration.' },
+  { q: 'Can I change the exercises, sets, or reps?', a: 'Yes — everything in Program is editable. Tap any exercise to expand it and change its name, sets, reps, category, or percentage settings. You can also add or delete exercises, categories, and whole training days.' },
+  { q: 'What does the rest timer do?', a: 'It opens automatically after you mark a set done, counting down from your default rest time (editable below). It\'s visual-only for now — no sound or vibration.' },
+];
+
+async function renderSettings(container) {
   const s = STATE.settings;
+  const workouts = await DB.getAll('workouts');
+  const completedDates = workouts.filter((w) => w.completedAt).map((w) => w.completedAt);
+  const streak = computeStreak(completedDates);
   container.innerHTML = `
+    ${streak > 0 ? `<div class="streak-banner"><div class="num">🔥${streak}</div><div class="lbl">day streak<br>${completedDates.length} workouts logged total</div></div>` : ''}
+    <div class="card">
+      <div class="card-title">Theme</div>
+      <div class="swatch-row" id="swatch-row">
+        ${Object.entries(ACCENT_THEMES).map(([key, t]) => `<div class="swatch ${s.accent === key ? 'active' : ''}" data-swatch="${key}" style="background:${t.accent};" title="${t.name}"></div>`).join('')}
+      </div>
+      <label style="margin-top:14px;">Custom background photo</label>
+      <input type="file" id="bg-file" accept="image/*">
+      ${s.themeBackground ? `<button class="btn secondary small" id="remove-bg" style="margin-top:8px;">Remove background photo</button>` : ''}
+    </div>
     <div class="card">
       <div class="card-title">Rest Timer</div>
       <label>Default rest between sets (seconds)</label><input type="number" id="set-rest" value="${s.restSeconds}">
@@ -1560,8 +1998,47 @@ function renderSettings(container) {
       <label style="margin-top:10px;">Import backup file</label>
       <input type="file" id="import-file" accept="application/json">
     </div>
+    <div class="card">
+      <div class="card-title">FAQ</div>
+      ${FAQ_ITEMS.map((item, i) => `<div class="faq-item" data-faq="${i}"><div class="faq-q"><span>${escapeHtml(item.q)}</span><span class="chev">▾</span></div><div class="faq-a">${escapeHtml(item.a)}</div></div>`).join('')}
+    </div>
     <div class="card"><div class="card-title">Danger Zone</div><button class="btn block danger" id="reset-btn">Erase All Data</button></div>
     <div class="card"><div class="card-title">About</div><div class="exercise-meta">IronLog — personal powerlifting tracker. No ads, no accounts. Data is stored in this browser only (per-device, per-app); export a backup before switching phones or browsers.</div></div>`;
+
+  container.querySelectorAll('.faq-q').forEach((q) => {
+    q.addEventListener('click', () => q.closest('.faq-item').classList.toggle('open'));
+  });
+
+  container.querySelectorAll('[data-swatch]').forEach((sw) => {
+    sw.addEventListener('click', async () => {
+      s.accent = sw.dataset.swatch;
+      applyAccent(s.accent);
+      await saveSettings();
+      container.querySelectorAll('[data-swatch]').forEach((el) => el.classList.toggle('active', el.dataset.swatch === s.accent));
+    });
+  });
+
+  container.querySelector('#bg-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      s.themeBackground = reader.result;
+      applyBackgroundPhoto(s.themeBackground);
+      await saveSettings();
+      toast('✅', 'Background set', 'Your photo is now behind the app.');
+      renderSettings(container);
+    };
+    reader.readAsDataURL(file);
+  });
+  const removeBg = container.querySelector('#remove-bg');
+  if (removeBg) removeBg.addEventListener('click', async () => {
+    s.themeBackground = null;
+    applyBackgroundPhoto(null);
+    await saveSettings();
+    renderSettings(container);
+  });
+
   container.querySelector('#save-rest').addEventListener('click', async () => {
     s.restSeconds = parseInt(container.querySelector('#set-rest').value, 10) || s.restSeconds;
     s.timerAlertMode = container.querySelector('#set-alert').value;
