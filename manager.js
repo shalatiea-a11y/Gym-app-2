@@ -1,29 +1,28 @@
 // Headquarters/manager view: read-only visibility across locations.
-// Reuses the same demo storage the employee app writes to.
-Store.ensureSeeded();
-
+// RLS scopes every query to the signed-in manager's own organization.
 const app = document.getElementById("app");
 
-function renderDashboard() {
-  const locations = Store.getLocations();
+function showError(err) {
+  console.error(err);
+  app.innerHTML = `<div class="screen"><p class="muted" style="color:#b91c1c">Something went wrong: ${err.message || err}</p></div>`;
+}
+
+async function renderDashboard() {
+  app.innerHTML = `<div class="screen"><p class="muted">Loading…</p></div>`;
+  const [locations, inventories] = await Promise.all([Store.getLocations(), Store.getInventories()]);
   const today = new Date().toISOString().slice(0, 10);
-  const inventories = Store.getInventories();
 
-  const rows = locations.map((loc) => {
-    const record = inventories.find((r) => r.locationId === loc.id && r.date === today);
-    return { loc, record };
-  });
-
+  const rows = locations.map((loc) => ({
+    loc,
+    record: inventories.find((r) => r.locationId === loc.id && r.date === today),
+  }));
   const completeCount = rows.filter((r) => r.record).length;
 
   app.innerHTML = `
-    <div class="topbar"><div class="brand">Manager Dashboard</div></div>
+    <div class="topbar"><div class="brand">Manager Dashboard</div><button class="pill" onclick="Auth.signOut()" style="margin-left:auto">Sign out</button></div>
     <div class="screen">
       <h1>Today's Status</h1>
-      <div class="mgr-status">
-        <span class="status-chip">Inventory: ${completeCount}/${rows.length} completed</span>
-      </div>
-
+      <div class="mgr-status"><span class="status-chip">Inventory: ${completeCount}/${rows.length} completed</span></div>
       <p class="muted">Branches</p>
       ${rows.map(({ loc, record }) => `
         <button class="branch-card" onclick="showBranch('${loc.id}')">
@@ -35,11 +34,11 @@ function renderDashboard() {
   `;
 }
 
-function showBranch(locationId) {
-  const loc = Store.getLocations().find((l) => l.id === locationId);
-  const records = Store.getInventories()
-    .filter((r) => r.locationId === locationId)
-    .sort((a, b) => b.timestamp - a.timestamp);
+async function showBranch(locationId) {
+  app.innerHTML = `<div class="screen"><p class="muted">Loading…</p></div>`;
+  const [locations, inventories] = await Promise.all([Store.getLocations(), Store.getInventories()]);
+  const loc = locations.find((l) => l.id === locationId);
+  const records = inventories.filter((r) => r.locationId === locationId);
 
   app.innerHTML = `
     <div class="topbar"><button class="back" onclick="renderDashboard()">←</button><div class="brand">${loc.name}</div></div>
@@ -47,13 +46,20 @@ function showBranch(locationId) {
       ${records.length === 0 ? `<p class="muted">No submissions yet.</p>` : records.map((r) => `
         <div class="history-card">
           <div class="history-head"><span>${r.date}</span><span class="muted">by ${r.employee}</span></div>
-          ${r.items.map((it) => `
-            <div class="review-row"><span>${it.productName}</span><span>${it.totalPieces} pcs</span></div>
-          `).join("")}
+          ${r.items.map((it) => `<div class="review-row"><span>${it.productName}</span><span>${it.totalPieces} pcs</span></div>`).join("")}
         </div>
       `).join("")}
     </div>
   `;
 }
 
-renderDashboard();
+async function boot() {
+  await Auth.requireSession();
+  try {
+    await Store.init();
+    renderDashboard();
+  } catch (err) {
+    showError(err);
+  }
+}
+boot();

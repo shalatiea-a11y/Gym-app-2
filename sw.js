@@ -1,7 +1,7 @@
-const CACHE = "rios-v1";
+const CACHE = "rios-v2";
 const ASSETS = [
-  "index.html", "manager.html", "style.css", "data.js", "storage.js",
-  "app.js", "manager.js", "manifest.json", "icons/icon.svg",
+  "index.html", "manager.html", "login.html", "style.css", "config.js",
+  "auth.js", "storage.js", "app.js", "manager.js", "manifest.json", "icons/icon.svg",
 ];
 
 self.addEventListener("install", (e) => {

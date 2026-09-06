@@ -1,35 +1,37 @@
 // Employee-facing mobile inventory workflow.
-Store.ensureSeeded();
-
 const app = document.getElementById("app");
-let session = {
-  categoryId: null,
-  entries: {}, // productId -> { mode, fullBoxes, pieces, fraction }
-  productIds: [], // products touched, in order, for the review screen
-};
+let session = { entries: {} }; // productId -> { mode, fullBoxes, pieces, fraction }
+let PRODUCTS = [];
+let LOCATIONS = [];
+let CATEGORIES = [];
+
+function render(html) { app.innerHTML = html; }
 
 function currentLocation() {
   const id = Store.getCurrentLocation();
-  return Store.getLocations().find((l) => l.id === id);
+  return LOCATIONS.find((l) => l.id === id) || LOCATIONS[0];
 }
 
-function render(html) {
-  app.innerHTML = html;
-}
-
-function go(view, ...args) {
-  views[view](...args);
+async function go(view, ...args) {
+  await views[view](...args);
   window.scrollTo(0, 0);
 }
 
+function showError(err) {
+  console.error(err);
+  render(`<div class="screen"><p class="muted" style="color:#b91c1c">Something went wrong: ${err.message || err}</p></div>`);
+}
+
 const views = {
-  home() {
+  async home() {
+    render(`<div class="screen"><p class="muted">Loading…</p></div>`);
     const loc = currentLocation();
-    const existing = Store.todaysInventory(loc.id);
+    const existing = await Store.todaysInventory(loc.id);
     render(`
       <div class="topbar">
         <div class="brand">Restaurant Ops</div>
         <button class="pill" onclick="go('locationPicker')">${loc.name} ▾</button>
+        <button class="pill" onclick="Auth.signOut()" style="margin-left:6px">Sign out</button>
       </div>
       <div class="screen">
         <h1>Good morning</h1>
@@ -55,32 +57,26 @@ const views = {
     `);
   },
 
-  locationPicker() {
-    const locs = Store.getLocations();
+  async locationPicker() {
     render(`
       <div class="topbar"><button class="back" onclick="go('home')">←</button><div class="brand">Select Location</div></div>
       <div class="screen">
-        ${locs.map((l) => `
-          <button class="list-row" onclick="Store.setCurrentLocation('${l.id}'); go('home')">
-            ${l.name}
-          </button>
+        ${LOCATIONS.map((l) => `
+          <button class="list-row" onclick="Store.setCurrentLocation('${l.id}'); go('home')">${l.name}</button>
         `).join("")}
       </div>
     `);
   },
 
-  categories() {
-    const cats = Store.getCategories();
-    const products = Store.getProducts();
+  async categories() {
     render(`
       <div class="topbar"><button class="back" onclick="go('home')">←</button><div class="brand">Morning Inventory</div></div>
       <div class="screen">
         <p class="muted">Select category</p>
         <div class="grid">
-          ${cats.map((c) => {
-            const count = products.filter((p) => p.category === c).length;
-            if (!count) return "";
-            const done = products.filter((p) => p.category === c && session.entries[p.id]).length;
+          ${CATEGORIES.map((c) => {
+            const count = PRODUCTS.filter((p) => p.category === c).length;
+            const done = PRODUCTS.filter((p) => p.category === c && session.entries[p.id]).length;
             return `
               <button class="category-tile" onclick="go('productList','${c}')">
                 <div class="cat-name">${c}</div>
@@ -89,14 +85,13 @@ const views = {
             `;
           }).join("")}
         </div>
-        ${session.productIds.length ? `<button class="primary sticky" onclick="go('review')">Review & Submit (${session.productIds.length})</button>` : ""}
+        ${Object.keys(session.entries).length ? `<button class="primary sticky" onclick="go('review')">Review & Submit (${Object.keys(session.entries).length})</button>` : ""}
       </div>
     `);
   },
 
-  productList(category) {
-    session.categoryId = category;
-    const products = Store.getProducts().filter((p) => p.category === category);
+  async productList(category) {
+    const products = PRODUCTS.filter((p) => p.category === category);
     render(`
       <div class="topbar"><button class="back" onclick="go('categories')">←</button><div class="brand">${category}</div></div>
       <div class="screen">
@@ -114,33 +109,27 @@ const views = {
     `);
   },
 
-  productEntry(productId) {
-    const p = Store.getProducts().find((x) => x.id === productId);
+  async productEntry(productId) {
+    const p = PRODUCTS.find((x) => x.id === productId);
     const entry = session.entries[productId] || { mode: "boxes+pieces", fullBoxes: 0, pieces: 0, fraction: "full" };
     session.entries[productId] = entry;
 
-    function total() {
-      return Store.normalizeQuantity(p, entry);
-    }
+    const total = () => Store.normalizeQuantity(p, entry);
 
     render(`
       <div class="topbar"><button class="back" onclick="go('productList','${p.category}')">←</button><div class="brand">${p.name}</div></div>
       <div class="screen">
         <p class="muted">1 box = ${p.unitsPerBox} pieces</p>
-
         <div class="tabs">
           <button class="tab ${entry.mode === "boxes+pieces" ? "active" : ""}" data-mode="boxes+pieces">Boxes + pieces</button>
           <button class="tab ${entry.mode === "fraction" ? "active" : ""}" data-mode="fraction">Fraction</button>
           <button class="tab ${entry.mode === "pieces" ? "active" : ""}" data-mode="pieces">Pieces only</button>
         </div>
-
         <div id="entryBody"></div>
-
         <div class="total-card">
           <span>Total</span>
           <span id="totalVal" class="total-val">${total()} pieces</span>
         </div>
-
         <button class="primary sticky" onclick="commitEntry('${productId}')">Save</button>
       </div>
     `);
@@ -170,12 +159,10 @@ const views = {
         const options = ["full", "3/4", "1/2", "1/3", "1/4"];
         body.innerHTML = `
           <div class="fraction-grid">
-            ${options.map((f) => `
-              <button class="fraction-btn ${entry.fraction === f ? "active" : ""}" onclick="setFraction('${productId}','${f}')">${f}</button>
-            `).join("")}
+            ${options.map((f) => `<button class="fraction-btn ${entry.fraction === f ? "active" : ""}" onclick="setFraction('${productId}','${f}')">${f}</button>`).join("")}
           </div>
         `;
-      } else if (entry.mode === "pieces") {
+      } else {
         body.innerHTML = `
           <div class="stepper-row">
             <label>Pieces counted</label>
@@ -217,28 +204,23 @@ const views = {
     }
   },
 
-  review() {
-    const products = Store.getProducts();
+  async review() {
     const rows = Object.keys(session.entries).map((pid) => {
-      const p = products.find((x) => x.id === pid);
-      const total = Store.normalizeQuantity(p, session.entries[pid]);
-      return { p, total };
+      const p = PRODUCTS.find((x) => x.id === pid);
+      return { p, total: Store.normalizeQuantity(p, session.entries[pid]) };
     });
     render(`
       <div class="topbar"><button class="back" onclick="go('categories')">←</button><div class="brand">Review</div></div>
       <div class="screen">
         ${rows.length === 0 ? `<p class="muted">No products entered yet.</p>` : rows.map((r) => `
-          <div class="review-row">
-            <span>${r.p.name}</span>
-            <span>${r.total} pcs</span>
-          </div>
+          <div class="review-row"><span>${r.p.name}</span><span>${r.total} pcs</span></div>
         `).join("")}
         <button class="primary sticky" ${rows.length === 0 ? "disabled" : ""} onclick="submitInventory()">Submit Inventory</button>
       </div>
     `);
   },
 
-  done(count) {
+  async done(count) {
     render(`
       <div class="screen center">
         <div class="check">✓</div>
@@ -249,20 +231,17 @@ const views = {
     `);
   },
 
-  history() {
+  async history() {
+    render(`<div class="screen"><p class="muted">Loading…</p></div>`);
     const loc = currentLocation();
-    const records = Store.getInventories()
-      .filter((r) => r.locationId === loc.id)
-      .sort((a, b) => b.timestamp - a.timestamp);
+    const all = await Store.getInventories();
+    const records = all.filter((r) => r.locationId === loc.id);
     render(`
       <div class="topbar"><button class="back" onclick="go('home')">←</button><div class="brand">Previous Inventory</div></div>
       <div class="screen">
         ${records.length === 0 ? `<p class="muted">No submissions yet.</p>` : records.map((r) => `
           <div class="history-card">
-            <div class="history-head">
-              <span>${r.date}</span>
-              <span class="muted">${r.items.length} products</span>
-            </div>
+            <div class="history-head"><span>${r.date}</span><span class="muted">${r.items.length} products</span></div>
             <div class="muted">By ${r.employee}</div>
           </div>
         `).join("")}
@@ -272,40 +251,56 @@ const views = {
 };
 
 function commitEntry(productId) {
-  if (!session.productIds.includes(productId)) {
-    session.productIds.push(productId);
-  }
-  const p = Store.getProducts().find((x) => x.id === productId);
+  const p = PRODUCTS.find((x) => x.id === productId);
   go("productList", p.category);
 }
 
-function submitInventory() {
-  const products = Store.getProducts();
+async function submitInventory() {
+  const loc = currentLocation();
   const items = Object.keys(session.entries).map((pid) => {
-    const p = products.find((x) => x.id === pid);
+    const p = PRODUCTS.find((x) => x.id === pid);
+    const entry = session.entries[pid];
     return {
       productId: pid,
-      productName: p.name,
-      entry: session.entries[pid],
-      totalPieces: Store.normalizeQuantity(p, session.entries[pid]),
+      entry,
+      unitsPerPackageAtEntry: p.unitsPerBox,
+      totalPieces: Store.normalizeQuantity(p, entry),
     };
   });
-  const loc = currentLocation();
-  Store.saveInventory({
-    locationId: loc.id,
-    date: new Date().toISOString().slice(0, 10),
-    timestamp: Date.now(),
-    employee: "Demo Employee",
-    items,
-  });
-  go("done", items.length);
+  try {
+    await Store.saveInventory({
+      locationId: loc.id,
+      date: new Date().toISOString().slice(0, 10),
+      items,
+    });
+    go("done", items.length);
+  } catch (err) {
+    if (String(err.message || "").includes("duplicate key")) {
+      showError(new Error("Inventory for this location was already submitted today."));
+    } else {
+      showError(err);
+    }
+  }
 }
 
-function resetSession() {
-  session = { categoryId: null, entries: {}, productIds: [] };
-}
+function resetSession() { session = { entries: {} }; }
 
-go("home");
+async function boot() {
+  await Auth.requireSession();
+  render(`<div class="screen"><p class="muted">Loading…</p></div>`);
+  try {
+    await Store.init();
+    [PRODUCTS, LOCATIONS] = await Promise.all([Store.getProducts(), Store.getLocations()]);
+    CATEGORIES = [...new Set(PRODUCTS.map((p) => p.category))];
+    if (!Store.getCurrentLocation() && LOCATIONS[0]) {
+      Store.setCurrentLocation(LOCATIONS[0].id);
+    }
+    go("home");
+  } catch (err) {
+    showError(err);
+  }
+}
+boot();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
