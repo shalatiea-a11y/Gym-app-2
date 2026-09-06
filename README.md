@@ -19,6 +19,7 @@ Honest classification per area (see "Testing" for exactly what each claim rests 
 | Cross-organization data isolation (RLS) | **VERIFIED** against a real local Postgres instance (see below) — not yet verified against the actual hosted Supabase project, since none exists yet |
 | Atomic submission (no orphaned rows on partial failure) | **VERIFIED** — reproduced the old bug, confirmed the fix prevents it |
 | Admin-only edit/delete of inventory history | **VERIFIED** locally |
+| Per-employee location scoping (`employee_locations`) — employees can't read/write outside their assigned branch, only admins can edit the product/location catalog | **VERIFIED** locally, including a real RLS infinite-recursion bug found and fixed during testing (see "Phase 2" below) |
 | Employee/manager UI screens, PWA install, real Supabase Auth login | **NOT VERIFIED** — requires a real Supabase project + browser; this sandbox has no browser and cannot provision Supabase |
 | Delivery receiving, invoice AI, integrations, forecasting | **NOT BUILT** — deliberately out of scope for this MVP |
 
@@ -66,6 +67,51 @@ service (GoTrue), PostgREST's HTTP layer, or the browser-side `auth.js`/
 which was the part most likely to hide a real vulnerability. The browser
 flow still needs a real Supabase project to verify end-to-end.
 
+### Phase 2: per-employee location scoping (`employee_locations`)
+
+The first audit pass above left one gap explicitly flagged as a known
+limitation: `locations` and `products` used `for all` RLS policies, so any
+authenticated org member — including a plain employee — could directly
+`INSERT`/`UPDATE`/`DELETE` those tables through the API, not just read
+them. Closed by adding an `employee_locations` assignment table and
+splitting every policy into per-action rules (read: broad; write:
+admin-only; inventory read: employees scoped to their assigned
+location(s), admins/managers see everything).
+
+Testing this against the same local Postgres setup immediately surfaced a
+real bug: the `locations` policy queries `employee_locations` to check an
+employee's assignment, and the first version of the `employee_locations`
+policy queried `locations` right back — Postgres detected the circular
+dependency and refused every query on either table with "infinite
+recursion detected in policy." Fixed by rewriting the `employee_locations`
+policy to check `profile_id = auth.uid()` directly instead of joining
+through `locations`. Re-ran the full scenario after the fix:
+
+- An employee assigned only to "Downtown" sees exactly one location, not
+  the other two — confirmed.
+- The same employee's attempt to submit inventory for "Mall Branch"
+  (same org, just unassigned) is rejected by `submit_daily_inventory()`
+  — confirmed (the error message says "does not belong to your
+  organization" rather than "not assigned," because RLS itself hides the
+  unassigned location from the query the function uses to check it; this
+  is a cosmetic inaccuracy, not a security gap — if anything it leaks
+  less information to the caller than a precise message would).
+- The same employee submitting to their own assigned location succeeds.
+- Direct `INSERT` into `locations` or `products` by an employee is now
+  rejected — confirmed (previously would have succeeded).
+- A manager with **no** row in `employee_locations` at all still sees all
+  3 org locations and all of the org's inventory submissions — confirmed
+  the admin/manager blanket-visibility rule works independently of the
+  assignment table.
+- A manager's attempt to directly `INSERT` a product is rejected (manager
+  is not admin) — confirmed the write restriction is role-specific, not
+  just "not a plain employee."
+- An admin's `INSERT` into `locations` succeeds — confirmed.
+
+This is the same class of finding the rest of this document keeps
+emphasizing: the recursion bug would not have been caught by reading the
+SQL, only by actually running it.
+
 ## Architecture
 
 ```
@@ -98,6 +144,16 @@ records stay auditable even if a product's package size changes later.
    insert into profiles (id, organization_id, full_name, role)
    values ('<the user''s auth uid>', '00000000-0000-0000-0000-000000000001', 'Demo Employee', 'employee');
    ```
+   If the role is `employee`, also assign which location(s) they can see
+   and submit inventory for (admins and managers automatically see every
+   location in the org and don't need this):
+   ```sql
+   insert into employee_locations (profile_id, location_id)
+   values ('<the user''s auth uid>', (select id from locations where name = 'Downtown'));
+   ```
+   An employee with no row here will see zero locations and be unable to
+   do anything — that's enforced by RLS, not a bug, but worth knowing when
+   a demo login "shows nothing."
 5. In **Project Settings → API**, copy your Project URL and `anon` public
    key into `config.js`.
 6. Serve the folder with any static file server (or open `login.html`
@@ -165,15 +221,6 @@ end-to-end.
 
 ## Known limitations (not yet fixed — flagging honestly rather than silently)
 
-- **Role enforcement is partial.** RLS currently lets any authenticated
-  member of an organization *read* all of that org's locations/products/
-  inventory (needed today because the employee app has no concept of
-  "this employee is assigned to this location only"). `manager.html` adds
-  a client-side check that turns away `employee`-role profiles, but that
-  is UX, not a security boundary — an employee who inspects network
-  requests could still read org-wide inventory data. Closing this properly
-  needs a location-assignment table and RLS policies keyed off it; tracked
-  as the next phase after this one.
 - **No profile self-service.** New users must be linked to an organization
   via a manual SQL `insert into profiles ...` (see Setup) — there is no
   admin UI or invite flow yet.

@@ -57,12 +57,12 @@ async function boot() {
   await Auth.requireSession();
   try {
     const profile = await Store.init();
-    // Client-side gate only — see README "Known limitations": the database
-    // RLS policies currently let any org member read org-wide inventory
-    // data (needed so an employee's app can list all of their org's
-    // locations/products). This blocks the UI path for non-managers but is
-    // not yet a real authorization boundary; that requires scoping reads
-    // by an employee's assigned location(s), which is a future phase.
+    // This is now backed by a real server-side boundary, not just UI: RLS
+    // scopes an employee's reads/writes to their assigned location(s) via
+    // the employee_locations table (see supabase/schema.sql), so even if
+    // an employee opened this page directly they could not fetch another
+    // location's data through the API. This check just gives them a clear
+    // message instead of an empty/broken-looking dashboard.
     if (profile.role === "employee") {
       app.innerHTML = `<div class="screen"><p class="muted">Manager or admin access required.</p></div>`;
       return;

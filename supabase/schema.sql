@@ -98,20 +98,84 @@ create policy "own org only" on organizations
 create policy "profiles in own org" on profiles
   for select using (organization_id = current_org_id());
 
-create policy "locations in own org" on locations
-  for all using (organization_id = current_org_id())
-  with check (organization_id = current_org_id());
+-- Which locations a given employee is allowed to work with. Admins and
+-- managers are not listed here — they see every location in their
+-- organization regardless (checked via current_role() below). Only meant
+-- to scope plain employees to the branch(es) they actually work at.
+create table employee_locations (
+  profile_id uuid not null references profiles(id) on delete cascade,
+  location_id uuid not null references locations(id) on delete cascade,
+  primary key (profile_id, location_id)
+);
+alter table employee_locations enable row level security;
 
-create policy "products in own org" on products
-  for all using (organization_id = current_org_id())
-  with check (organization_id = current_org_id());
+create or replace function current_role_name() returns text
+language sql stable security definer as $$
+  select role from profiles where id = auth.uid();
+$$;
 
--- Inventory records are an audit trail: any org member can read them, but
--- only admins may edit or delete a historical submission. Normal writes go
--- through submit_daily_inventory() below (SECURITY INVOKER, still subject
--- to these same policies) rather than direct inserts from the client.
-create policy "inventory submissions read in own org" on inventory_submissions
+-- Deliberately does NOT reference the locations table: locations' own
+-- policy (below) queries employee_locations to decide what an employee can
+-- see, so if this policy queried locations right back, Postgres would
+-- detect infinite recursion between the two (confirmed by testing this
+-- exact scenario against a real instance — see README). A profile can
+-- always see its own assignment rows; admins/managers can see everyone's.
+create policy "own assignments or admin/manager" on employee_locations
+  for select using (
+    profile_id = auth.uid() or current_role_name() in ('admin', 'manager')
+  );
+
+create policy "admin manages location assignments" on employee_locations
+  for insert with check (current_role_name() = 'admin');
+create policy "admin updates location assignments" on employee_locations
+  for update using (current_role_name() = 'admin');
+create policy "admin removes location assignments" on employee_locations
+  for delete using (current_role_name() = 'admin');
+
+-- Configuration data (locations, products): every org member can read it
+-- (an employee needs to see the product catalog to count inventory), but
+-- only admins can create/edit/delete it — this was previously "for all",
+-- which let a plain employee write directly to these tables.
+-- An employee is further restricted to their assigned location(s);
+-- admins/managers see and can be assigned to every location in the org.
+create policy "locations readable in own org, scoped for employees" on locations
+  for select using (
+    organization_id = current_org_id()
+    and (
+      current_role_name() in ('admin', 'manager')
+      or id in (select location_id from employee_locations where profile_id = auth.uid())
+    )
+  );
+create policy "locations admin insert" on locations
+  for insert with check (organization_id = current_org_id() and current_role_name() = 'admin');
+create policy "locations admin update" on locations
+  for update using (organization_id = current_org_id() and current_role_name() = 'admin');
+create policy "locations admin delete" on locations
+  for delete using (organization_id = current_org_id() and current_role_name() = 'admin');
+
+create policy "products readable in own org" on products
   for select using (organization_id = current_org_id());
+create policy "products admin insert" on products
+  for insert with check (organization_id = current_org_id() and current_role_name() = 'admin');
+create policy "products admin update" on products
+  for update using (organization_id = current_org_id() and current_role_name() = 'admin');
+create policy "products admin delete" on products
+  for delete using (organization_id = current_org_id() and current_role_name() = 'admin');
+
+-- Inventory records are an audit trail: admins/managers read everything in
+-- the org; employees only read submissions for their assigned location(s)
+-- (same rule as the locations policy above). Only admins may edit or
+-- delete a historical submission. Normal writes go through
+-- submit_daily_inventory() below (SECURITY INVOKER, still subject to
+-- these same policies) rather than direct inserts from the client.
+create policy "inventory submissions read scoped to role" on inventory_submissions
+  for select using (
+    organization_id = current_org_id()
+    and (
+      current_role_name() in ('admin', 'manager')
+      or location_id in (select location_id from employee_locations where profile_id = auth.uid())
+    )
+  );
 
 create policy "inventory submissions insert in own org" on inventory_submissions
   for insert with check (organization_id = current_org_id());
@@ -179,6 +243,11 @@ begin
 
   if not exists (select 1 from locations where id = p_location_id and organization_id = v_org_id) then
     raise exception 'Location does not belong to your organization';
+  end if;
+
+  if current_role_name() = 'employee'
+     and not exists (select 1 from employee_locations where profile_id = auth.uid() and location_id = p_location_id) then
+    raise exception 'You are not assigned to this location';
   end if;
 
   insert into inventory_submissions (organization_id, location_id, submitted_by, inventory_date)
