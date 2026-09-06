@@ -10,14 +10,61 @@ against a configurable, per-organization product catalog.
 
 ## Status
 
+Honest classification per area (see "Testing" for exactly what each claim rests on):
+
 | Area | Status |
 |---|---|
-| Employee inventory workflow (boxes+pieces / fraction / pieces) | Verified locally with a live Supabase project |
-| Deterministic quantity calculations | Verified — see "Testing" below |
-| Manager dashboard (per-location completion status) | Verified locally |
-| Auth + multi-organization data isolation (RLS) | Implemented, requires your own Supabase project to verify end-to-end |
-| PWA installability | Implemented, not verified on a physical device this session |
-| Delivery receiving, invoice AI, integrations, forecasting | Not built — deliberately out of scope for this MVP |
+| Deterministic quantity calculations (boxes+pieces, fractions, pieces, edge cases) | **VERIFIED** — 19/19 automated tests, `tests/calculations.test.js` |
+| Server-side recomputation of quantities (client can't fabricate a total) | **VERIFIED** against a real local Postgres instance |
+| Cross-organization data isolation (RLS) | **VERIFIED** against a real local Postgres instance (see below) — not yet verified against the actual hosted Supabase project, since none exists yet |
+| Atomic submission (no orphaned rows on partial failure) | **VERIFIED** — reproduced the old bug, confirmed the fix prevents it |
+| Admin-only edit/delete of inventory history | **VERIFIED** locally |
+| Employee/manager UI screens, PWA install, real Supabase Auth login | **NOT VERIFIED** — requires a real Supabase project + browser; this sandbox has no browser and cannot provision Supabase |
+| Delivery receiving, invoice AI, integrations, forecasting | **NOT BUILT** — deliberately out of scope for this MVP |
+
+### How the backend was verified without a live Supabase project
+
+This sandbox has PostgreSQL 16 installed locally (but no Supabase account/
+credentials). To actually test the RLS policies and the `submit_daily_inventory`
+function — rather than just reading them — a minimal shim was created that
+emulates the two Supabase-specific pieces `schema.sql` depends on
+(`auth.users`, `auth.uid()`), the full schema was applied to a throwaway
+local database, and a non-superuser `authenticated` role was used so RLS
+was actually enforced (superusers bypass RLS entirely, which would make
+the test meaningless). Two organizations, three users (two in org 1 — one
+employee, one admin — and one employee in a rival org 2) were created, and
+the following were run as real queries impersonating each user:
+
+- Org 1 employee sees only org 1's 3 locations and 10 products — confirmed.
+- Org 1 employee submits inventory; server recomputes the total (verified
+  it stores exactly 576 for 24 boxes @ 24/box, matching the spec).
+- Org 1 employee tries to submit inventory **against the rival org's
+  location** → rejected by the function's own check, before RLS even needs
+  to intervene.
+- Rival org employee runs a raw `SELECT` against `locations`/`products`/
+  `inventory_submissions` → sees only their own org's rows, zero of org 1's.
+- Rival org employee attempts a raw `INSERT` directly into
+  `inventory_submissions` naming org 1's `organization_id` → rejected with
+  "new row violates row-level security policy".
+- Org 1 employee (role `employee`) attempts to `DELETE` a historical
+  submission → `DELETE 0` (silently blocked by RLS, no rows affected).
+- Org 1 **admin** performs the same delete → succeeds.
+- Duplicate same-day submission for one location → rejected with a unique
+  constraint violation, and critically, **zero rows left behind** — verified
+  by counting rows as the table owner after the rejected attempt.
+- To prove the atomicity fix actually mattered: the *old* two-step
+  insert-then-insert pattern was manually reproduced (insert a submission,
+  skip the items insert to simulate a mid-write failure) — this did leave
+  an orphaned submission row, and a legitimate retry for that same
+  location+day was then permanently rejected by the unique constraint with
+  no way to recover. This confirms the bug was real and that
+  `submit_daily_inventory()`'s single-transaction design fixes it.
+
+What this does *not* prove: it does not exercise Supabase's actual Auth
+service (GoTrue), PostgREST's HTTP layer, or the browser-side `auth.js`/
+`storage.js`/`app.js` code against a real network — only the SQL/RLS layer,
+which was the part most likely to hide a real vulnerability. The browser
+flow still needs a real Supabase project to verify end-to-end.
 
 ## Architecture
 
@@ -84,23 +131,61 @@ real employees — see the phased roadmap in the product vision doc.
 
 ## Testing
 
-Deterministic calculation logic was verified directly (not by running the
-UI): for a 24-pieces-per-box product, 24 boxes + 0 pieces = 576, 24 boxes +
-7 pieces = 583, and 1/3 of a 24-piece box rounds to 8 — matching the
-worked examples in the product spec. The Supabase-backed workflow (login →
-submit inventory → manager sees it) has not been exercised against a live
-project in this session, since that requires a Supabase project this
-environment cannot provision — set one up per "Setup" above to verify
+Run `node tests/calculations.test.js` for the pure calculation logic
+(19 cases: worked spec examples, fractions, missing/empty input, unknown
+modes, large numbers, and the negative-input boundary between UI clamping
+and calculation logic).
+
+The RLS/multi-tenancy/atomicity claims above were verified against a real
+local PostgreSQL 16 instance with a shim for Supabase's `auth.uid()` — see
+"How the backend was verified without a live Supabase project". The
+browser-facing flow (login → submit inventory → manager sees it) still
+needs a real Supabase project — set one up per "Setup" above to verify
 end-to-end.
 
 ## Security notes
 
 - Multi-tenant isolation is enforced by Postgres RLS, not by application
-  code — even a compromised or buggy frontend cannot read another
-  organization's data through the anon key.
-- No secrets are stored client-side beyond the anon key (safe by design).
+  code — verified directly, including raw-SQL cross-org attack attempts
+  (see "Testing"); even a compromised or buggy frontend cannot read or
+  write another organization's data through the anon key.
+- Quantities are recomputed server-side inside `submit_daily_inventory()`
+  from the employee's raw entered values and the product's *current*
+  package size read from the database — a compromised or buggy client
+  cannot forge a `normalized_quantity` by sending one directly.
+- No secrets are stored client-side beyond the anon key (safe by design —
+  it grants no access on its own; RLS is the actual boundary).
 - Duplicate same-day submissions for a location are rejected by a unique
-  database constraint, not just UI logic.
+  database constraint, not just UI logic, and the submission is atomic:
+  a failure partway through can never leave an orphaned row that blocks
+  a legitimate retry (verified — see "Testing").
+- Only `admin`-role profiles can edit or delete a historical inventory
+  submission; `employee`/`manager` roles can insert and read but not alter
+  the audit trail (verified).
+
+## Known limitations (not yet fixed — flagging honestly rather than silently)
+
+- **Role enforcement is partial.** RLS currently lets any authenticated
+  member of an organization *read* all of that org's locations/products/
+  inventory (needed today because the employee app has no concept of
+  "this employee is assigned to this location only"). `manager.html` adds
+  a client-side check that turns away `employee`-role profiles, but that
+  is UX, not a security boundary — an employee who inspects network
+  requests could still read org-wide inventory data. Closing this properly
+  needs a location-assignment table and RLS policies keyed off it; tracked
+  as the next phase after this one.
+- **No profile self-service.** New users must be linked to an organization
+  via a manual SQL `insert into profiles ...` (see Setup) — there is no
+  admin UI or invite flow yet.
+- **Product/location configuration is via the Supabase table editor or SQL**,
+  not an in-app admin screen.
+- **Offline support is not implemented.** The service worker caches the
+  static app shell so it loads instantly on repeat visits, but every data
+  operation (login, load products, submit inventory) requires a live
+  network connection to Supabase; a submission attempted while offline
+  will fail with an error, not queue for later.
+- **PWA icon is a plain flat SVG**, not a proper maskable icon with safe-zone
+  padding — will look slightly clipped on Android's adaptive icon shapes.
 
 ## Next steps (see priority order in the product vision)
 

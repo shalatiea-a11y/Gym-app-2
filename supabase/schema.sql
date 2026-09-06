@@ -64,15 +64,20 @@ create table inventory_items (
   submission_id uuid not null references inventory_submissions(id) on delete cascade,
   product_id uuid not null references products(id),
   entry_mode text not null check (entry_mode in ('boxes_pieces', 'fraction', 'pieces')),
-  entered_full_boxes numeric,
-  entered_pieces numeric,
-  entered_fraction text,
-  units_per_package_at_entry integer not null,
-  normalized_quantity numeric not null
+  entered_full_boxes numeric check (entered_full_boxes is null or entered_full_boxes >= 0),
+  entered_pieces numeric check (entered_pieces is null or entered_pieces >= 0),
+  entered_fraction text check (entered_fraction is null or entered_fraction in ('full','3/4','1/2','1/3','1/4')),
+  units_per_package_at_entry integer not null check (units_per_package_at_entry > 0),
+  normalized_quantity numeric not null check (normalized_quantity >= 0)
 );
 
 create unique index inventory_submissions_one_per_day
   on inventory_submissions (location_id, inventory_date);
+
+create index inventory_submissions_org_idx on inventory_submissions (organization_id);
+create index inventory_items_submission_idx on inventory_items (submission_id);
+create index locations_org_idx on locations (organization_id);
+create index products_org_idx on products (organization_id);
 
 -- Helper: the calling user's organization_id, looked up once per query.
 create or replace function current_org_id() returns uuid
@@ -101,17 +106,122 @@ create policy "products in own org" on products
   for all using (organization_id = current_org_id())
   with check (organization_id = current_org_id());
 
-create policy "inventory submissions in own org" on inventory_submissions
-  for all using (organization_id = current_org_id())
-  with check (organization_id = current_org_id());
+-- Inventory records are an audit trail: any org member can read them, but
+-- only admins may edit or delete a historical submission. Normal writes go
+-- through submit_daily_inventory() below (SECURITY INVOKER, still subject
+-- to these same policies) rather than direct inserts from the client.
+create policy "inventory submissions read in own org" on inventory_submissions
+  for select using (organization_id = current_org_id());
 
-create policy "inventory items via own org submission" on inventory_items
-  for all using (
-    submission_id in (select id from inventory_submissions where organization_id = current_org_id())
-  )
-  with check (
+create policy "inventory submissions insert in own org" on inventory_submissions
+  for insert with check (organization_id = current_org_id());
+
+create policy "inventory submissions admin update" on inventory_submissions
+  for update using (
+    organization_id = current_org_id()
+    and exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
+
+create policy "inventory submissions admin delete" on inventory_submissions
+  for delete using (
+    organization_id = current_org_id()
+    and exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+  );
+
+create policy "inventory items read via own org submission" on inventory_items
+  for select using (
     submission_id in (select id from inventory_submissions where organization_id = current_org_id())
   );
+
+create policy "inventory items insert via own org submission" on inventory_items
+  for insert with check (
+    submission_id in (select id from inventory_submissions where organization_id = current_org_id())
+  );
+
+create policy "inventory items admin update" on inventory_items
+  for update using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+    and submission_id in (select id from inventory_submissions where organization_id = current_org_id())
+  );
+
+create policy "inventory items admin delete" on inventory_items
+  for delete using (
+    exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+    and submission_id in (select id from inventory_submissions where organization_id = current_org_id())
+  );
+
+-- Atomic, server-validated inventory submission. The client sends only what
+-- the employee entered; this function — not the browser — is the source of
+-- truth for the box/piece conversion math and for both rows being written
+-- together. If any item fails validation, the whole submission is rolled
+-- back (Postgres functions run inside the calling transaction), so there is
+-- no half-written state for a retry to collide with.
+create or replace function submit_daily_inventory(p_location_id uuid, p_items jsonb, p_inventory_date date default current_date)
+returns uuid
+language plpgsql
+security invoker
+as $$
+declare
+  v_org_id uuid := current_org_id();
+  v_submission_id uuid;
+  v_item jsonb;
+  v_product products%rowtype;
+  v_mode text;
+  v_full_boxes numeric;
+  v_pieces numeric;
+  v_fraction text;
+  v_normalized numeric;
+  v_fraction_value numeric;
+begin
+  if v_org_id is null then
+    raise exception 'No organization linked to this account';
+  end if;
+
+  if not exists (select 1 from locations where id = p_location_id and organization_id = v_org_id) then
+    raise exception 'Location does not belong to your organization';
+  end if;
+
+  insert into inventory_submissions (organization_id, location_id, submitted_by, inventory_date)
+  values (v_org_id, p_location_id, auth.uid(), p_inventory_date)
+  returning id into v_submission_id;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    select * into v_product from products
+      where id = (v_item->>'product_id')::uuid and organization_id = v_org_id;
+    if not found then
+      raise exception 'Product % does not belong to your organization', v_item->>'product_id';
+    end if;
+
+    v_mode := v_item->>'entry_mode';
+    v_full_boxes := nullif(v_item->>'entered_full_boxes', '')::numeric;
+    v_pieces := nullif(v_item->>'entered_pieces', '')::numeric;
+    v_fraction := nullif(v_item->>'entered_fraction', '');
+
+    if v_mode = 'boxes_pieces' then
+      v_normalized := coalesce(v_full_boxes, 0) * v_product.units_per_package + coalesce(v_pieces, 0);
+    elsif v_mode = 'fraction' then
+      v_fraction_value := case v_fraction
+        when 'full' then 1 when '3/4' then 0.75 when '1/2' then 0.5
+        when '1/3' then 1.0/3 when '1/4' then 0.25 else 0 end;
+      v_normalized := round(v_product.units_per_package * v_fraction_value);
+    elsif v_mode = 'pieces' then
+      v_normalized := coalesce(v_pieces, 0);
+    else
+      raise exception 'Unknown entry mode %', v_mode;
+    end if;
+
+    insert into inventory_items (
+      submission_id, product_id, entry_mode, entered_full_boxes, entered_pieces,
+      entered_fraction, units_per_package_at_entry, normalized_quantity
+    ) values (
+      v_submission_id, v_product.id, v_mode, v_full_boxes, v_pieces,
+      v_fraction, v_product.units_per_package, v_normalized
+    );
+  end loop;
+
+  return v_submission_id;
+end;
+$$;
 
 -- ---------------------------------------------------------------------
 -- Demo seed data. Safe to run once. Create the two demo logins afterwards

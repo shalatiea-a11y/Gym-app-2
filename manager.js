@@ -56,7 +56,17 @@ async function showBranch(locationId) {
 async function boot() {
   await Auth.requireSession();
   try {
-    await Store.init();
+    const profile = await Store.init();
+    // Client-side gate only — see README "Known limitations": the database
+    // RLS policies currently let any org member read org-wide inventory
+    // data (needed so an employee's app can list all of their org's
+    // locations/products). This blocks the UI path for non-managers but is
+    // not yet a real authorization boundary; that requires scoping reads
+    // by an employee's assigned location(s), which is a future phase.
+    if (profile.role === "employee") {
+      app.innerHTML = `<div class="screen"><p class="muted">Manager or admin access required.</p></div>`;
+      return;
+    }
     renderDashboard();
   } catch (err) {
     showError(err);

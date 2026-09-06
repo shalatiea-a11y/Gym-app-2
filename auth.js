@@ -38,3 +38,12 @@ const Auth = (() => {
 
   return { requireSession, getProfile, signIn, signOut };
 })();
+
+// If the session ends (sign-out elsewhere, or the refresh token is revoked)
+// while the app is open, bounce to login rather than continuing to render
+// with stale/no auth.
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT" && !location.pathname.endsWith("login.html")) {
+    window.location.href = "login.html";
+  }
+});

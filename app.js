@@ -257,16 +257,13 @@ function commitEntry(productId) {
 
 async function submitInventory() {
   const loc = currentLocation();
-  const items = Object.keys(session.entries).map((pid) => {
-    const p = PRODUCTS.find((x) => x.id === pid);
-    const entry = session.entries[pid];
-    return {
-      productId: pid,
-      entry,
-      unitsPerPackageAtEntry: p.unitsPerBox,
-      totalPieces: Store.normalizeQuantity(p, entry),
-    };
-  });
+  // Only the raw entries are sent — submit_daily_inventory() on the server
+  // recomputes the normalized quantity itself rather than trusting a
+  // client-supplied total.
+  const items = Object.keys(session.entries).map((pid) => ({
+    productId: pid,
+    entry: session.entries[pid],
+  }));
   try {
     await Store.saveInventory({
       locationId: loc.id,
@@ -292,8 +289,17 @@ async function boot() {
     await Store.init();
     [PRODUCTS, LOCATIONS] = await Promise.all([Store.getProducts(), Store.getLocations()]);
     CATEGORIES = [...new Set(PRODUCTS.map((p) => p.category))];
-    if (!Store.getCurrentLocation() && LOCATIONS[0]) {
+    // The cached location id is a device-local preference, not org data —
+    // it can point at a location from a different account that previously
+    // used this browser, or one that no longer exists. Validate it against
+    // what this signed-in user's organization actually has.
+    const cachedId = Store.getCurrentLocation();
+    const cachedIsValid = cachedId && LOCATIONS.some((l) => l.id === cachedId);
+    if (!cachedIsValid && LOCATIONS[0]) {
       Store.setCurrentLocation(LOCATIONS[0].id);
+    }
+    if (LOCATIONS.length === 0) {
+      throw new Error("No locations configured for your organization yet.");
     }
     go("home");
   } catch (err) {

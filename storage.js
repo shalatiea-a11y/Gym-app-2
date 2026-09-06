@@ -75,7 +75,6 @@ const Store = (() => {
   }
 
   const MODE_TO_DB = { "boxes+pieces": "boxes_pieces", fraction: "fraction", pieces: "pieces" };
-  const MODE_FROM_DB = { boxes_pieces: "boxes+pieces", fraction: "fraction", pieces: "pieces" };
 
   async function todaysInventory(locationId) {
     const today = new Date().toISOString().slice(0, 10);
@@ -118,32 +117,29 @@ const Store = (() => {
     return Promise.all(data.map((s) => toRecord(s, s.location_id)));
   }
 
+  // Writes go through the submit_daily_inventory() Postgres function
+  // (supabase/schema.sql) rather than direct table inserts: it recomputes
+  // the box/piece math server-side (never trusting the client's total),
+  // validates the location/products belong to the caller's own
+  // organization, and writes the submission + all items in one atomic
+  // transaction — so a mid-way failure can never leave an orphaned
+  // submission row that blocks a retry.
   async function saveInventory(record) {
-    const { organization_id, id: profileId } = requireProfile();
-    const { data: submission, error: subError } = await supabaseClient
-      .from("inventory_submissions")
-      .insert({
-        organization_id,
-        location_id: record.locationId,
-        submitted_by: profileId,
-        inventory_date: record.date,
-      })
-      .select()
-      .single();
-    if (subError) throw subError;
-
-    const rows = record.items.map((it) => ({
-      submission_id: submission.id,
+    requireProfile();
+    const items = record.items.map((it) => ({
       product_id: it.productId,
       entry_mode: MODE_TO_DB[it.entry.mode],
       entered_full_boxes: it.entry.fullBoxes ?? null,
       entered_pieces: it.entry.pieces ?? null,
       entered_fraction: it.entry.fraction ?? null,
-      units_per_package_at_entry: it.unitsPerPackageAtEntry,
-      normalized_quantity: it.totalPieces,
     }));
-    const { error: itemsError } = await supabaseClient.from("inventory_items").insert(rows);
-    if (itemsError) throw itemsError;
+    const { data, error } = await supabaseClient.rpc("submit_daily_inventory", {
+      p_location_id: record.locationId,
+      p_items: items,
+      p_inventory_date: record.date,
+    });
+    if (error) throw error;
+    return data;
   }
 
   return {
