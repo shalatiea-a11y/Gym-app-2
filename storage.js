@@ -76,31 +76,24 @@ const Store = (() => {
 
   const MODE_TO_DB = { "boxes+pieces": "boxes_pieces", fraction: "fraction", pieces: "pieces" };
 
-  async function todaysInventory(locationId) {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data, error } = await supabaseClient
-      .from("inventory_submissions")
-      .select("id, submitted_at, inventory_date, profiles(full_name)")
-      .eq("location_id", locationId)
-      .eq("inventory_date", today)
-      .maybeSingle();
-    if (error) throw error;
-    return data ? toRecord(data, locationId) : null;
-  }
+  // Both queries below embed inventory_items(...) directly in the select
+  // instead of fetching submissions and then looping to fetch each one's
+  // items separately (an N+1 pattern the first version of this file had —
+  // fine at demo scale with 1-2 submissions, but would mean hundreds of
+  // extra round-trips per page load for a real multi-location chain's
+  // history). One request, one join, done by PostgREST/Postgres.
+  const SUBMISSION_SELECT =
+    "id, location_id, submitted_at, inventory_date, profiles(full_name), " +
+    "inventory_items(product_id, normalized_quantity, products(name))";
 
-  async function toRecord(submission, locationId) {
-    const { data: items, error } = await supabaseClient
-      .from("inventory_items")
-      .select("product_id, normalized_quantity, entry_mode, products(name)")
-      .eq("submission_id", submission.id);
-    if (error) throw error;
+  function toRecord(submission) {
     return {
       id: submission.id,
-      locationId,
+      locationId: submission.location_id,
       date: submission.inventory_date,
       timestamp: new Date(submission.submitted_at).getTime(),
       employee: submission.profiles?.full_name || "Unknown",
-      items: items.map((it) => ({
+      items: (submission.inventory_items || []).map((it) => ({
         productId: it.product_id,
         productName: it.products?.name || "Unknown product",
         totalPieces: it.normalized_quantity,
@@ -108,13 +101,46 @@ const Store = (() => {
     };
   }
 
-  async function getInventories() {
+  async function todaysInventory(locationId) {
+    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabaseClient
       .from("inventory_submissions")
-      .select("id, location_id, submitted_at, inventory_date, profiles(full_name)")
-      .order("submitted_at", { ascending: false });
+      .select(SUBMISSION_SELECT)
+      .eq("location_id", locationId)
+      .eq("inventory_date", today)
+      .maybeSingle();
     if (error) throw error;
-    return Promise.all(data.map((s) => toRecord(s, s.location_id)));
+    return data ? toRecord(data) : null;
+  }
+
+  // Bounded by default (most recent 200 submissions org-wide, or 50 for a
+  // single location) — an unbounded "fetch the whole table" query is a
+  // real scalability hazard once a chain has months of daily history
+  // across many branches. Callers that genuinely need more can raise the
+  // limit explicitly.
+  async function getInventories({ locationId, limit } = {}) {
+    let query = supabaseClient
+      .from("inventory_submissions")
+      .select(SUBMISSION_SELECT)
+      .order("submitted_at", { ascending: false })
+      .limit(limit ?? (locationId ? 50 : 200));
+    if (locationId) query = query.eq("location_id", locationId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data.map(toRecord);
+  }
+
+  // For the manager dashboard's "today" summary, which only ever needs
+  // one row per location — a single filtered query rather than pulling
+  // history and filtering client-side.
+  async function todaysInventories() {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabaseClient
+      .from("inventory_submissions")
+      .select(SUBMISSION_SELECT)
+      .eq("inventory_date", today);
+    if (error) throw error;
+    return data.map(toRecord);
   }
 
   // Writes go through the submit_daily_inventory() Postgres function
@@ -151,6 +177,7 @@ const Store = (() => {
     setCurrentLocation,
     saveInventory,
     todaysInventory,
+    todaysInventories,
     getInventories,
     normalizeQuantity,
   };

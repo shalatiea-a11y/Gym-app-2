@@ -1,7 +1,18 @@
-const CACHE = "rios-v2";
+// v3: switched from cache-first to network-first for same-origin app files.
+// Cache-first meant that once a user installed the PWA, every future code
+// change (including the security/reliability fixes in this repo's history)
+// would silently NOT reach them until this file's CACHE constant changed
+// AND they happened to reopen the app with a network connection to let the
+// browser notice the updated sw.js — a real "users stuck on old, possibly
+// buggy code indefinitely" risk for an app under active development. Now:
+// try the network first (so a signed-in user always gets current code and
+// current data), and only fall back to the cached copy if the network is
+// unreachable — which is exactly the case where a fallback earns its keep.
+const CACHE = "rios-v3";
 const ASSETS = [
   "index.html", "manager.html", "login.html", "style.css", "config.js",
-  "auth.js", "storage.js", "app.js", "manager.js", "manifest.json", "icons/icon.svg",
+  "auth.js", "storage.js", "app.js", "manager.js", "manifest.json",
+  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (e) => {
@@ -15,10 +26,20 @@ self.addEventListener("activate", (e) => {
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     )
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (e) => {
+  if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) {
+    return; // never intercept Supabase API calls or non-GET requests
+  }
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

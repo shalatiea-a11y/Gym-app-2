@@ -234,8 +234,7 @@ const views = {
   async history() {
     render(`<div class="screen"><p class="muted">Loading…</p></div>`);
     const loc = currentLocation();
-    const all = await Store.getInventories();
-    const records = all.filter((r) => r.locationId === loc.id);
+    const records = await Store.getInventories({ locationId: loc.id });
     render(`
       <div class="topbar"><button class="back" onclick="go('home')">←</button><div class="brand">Previous Inventory</div></div>
       <div class="screen">

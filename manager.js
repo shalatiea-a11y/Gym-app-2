@@ -9,12 +9,11 @@ function showError(err) {
 
 async function renderDashboard() {
   app.innerHTML = `<div class="screen"><p class="muted">Loading…</p></div>`;
-  const [locations, inventories] = await Promise.all([Store.getLocations(), Store.getInventories()]);
-  const today = new Date().toISOString().slice(0, 10);
+  const [locations, todaysRecords] = await Promise.all([Store.getLocations(), Store.todaysInventories()]);
 
   const rows = locations.map((loc) => ({
     loc,
-    record: inventories.find((r) => r.locationId === loc.id && r.date === today),
+    record: todaysRecords.find((r) => r.locationId === loc.id),
   }));
   const completeCount = rows.filter((r) => r.record).length;
 
@@ -36,9 +35,11 @@ async function renderDashboard() {
 
 async function showBranch(locationId) {
   app.innerHTML = `<div class="screen"><p class="muted">Loading…</p></div>`;
-  const [locations, inventories] = await Promise.all([Store.getLocations(), Store.getInventories()]);
+  const [locations, records] = await Promise.all([
+    Store.getLocations(),
+    Store.getInventories({ locationId }),
+  ]);
   const loc = locations.find((l) => l.id === locationId);
-  const records = inventories.filter((r) => r.locationId === locationId);
 
   app.innerHTML = `
     <div class="topbar"><button class="back" onclick="renderDashboard()">←</button><div class="brand">${loc.name}</div></div>

@@ -20,6 +20,9 @@ Honest classification per area (see "Testing" for exactly what each claim rests 
 | Atomic submission (no orphaned rows on partial failure) | **VERIFIED** — reproduced the old bug, confirmed the fix prevents it |
 | Admin-only edit/delete of inventory history | **VERIFIED** locally |
 | Per-employee location scoping (`employee_locations`) — employees can't read/write outside their assigned branch, only admins can edit the product/location catalog | **VERIFIED** locally, including a real RLS infinite-recursion bug found and fixed during testing (see "Phase 2" below) |
+| Concurrent submissions to the same location/day don't corrupt data | **VERIFIED** — two genuinely parallel processes raced against real Postgres; exactly one won, zero orphaned rows (see "Phase 3") |
+| Query scalability (no N+1, bounded result sets) | **VERIFIED** the fix's data shape against real Postgres; **NOT VERIFIED** under actual load/many-rows since this is still demo-scale data |
+| PWA icons render correctly on iOS home screen | **NOT VERIFIED** on a physical device (no device access in this sandbox) — but the underlying defect (SVG icon, unsupported by iOS Safari) is fixed with real PNGs; verified the files are valid images of the correct dimensions |
 | Employee/manager UI screens, PWA install, real Supabase Auth login | **NOT VERIFIED** — requires a real Supabase project + browser; this sandbox has no browser and cannot provision Supabase |
 | Delivery receiving, invoice AI, integrations, forecasting | **NOT BUILT** — deliberately out of scope for this MVP |
 
@@ -111,6 +114,50 @@ through `locations`. Re-ran the full scenario after the fix:
 This is the same class of finding the rest of this document keeps
 emphasizing: the recursion bug would not have been caught by reading the
 SQL, only by actually running it.
+
+### Phase 3: scalability, concurrency, and PWA correctness
+
+A second audit pass, deliberately looking for things the first two passes
+hadn't checked rather than re-running identical checks against unchanged
+code:
+
+- **N+1 query bug**: `getInventories()` fetched N submissions, then issued
+  a *separate* query per submission for its line items — fine with 1-2 demo
+  rows, but hundreds of extra round-trips per page load for a real chain's
+  history. Fixed by embedding `inventory_items(...)` directly in the
+  submission query (PostgREST/Postgres does the join server-side). Verified
+  the resulting data shape by running the equivalent SQL join directly
+  against Postgres — confirmed a single query returns both line items with
+  correct server-computed totals (576 and 1205 for a two-product
+  submission).
+- **Unbounded queries**: nothing capped how many rows `getInventories()`
+  could return — a real hazard once a chain has months of history. Added
+  sane limits (200 org-wide / 50 per location) and a dedicated
+  `todaysInventories()` for the manager dashboard's "today" summary, which
+  only ever needs one row per location rather than the whole history table.
+- **Concurrency**: fired two `submit_daily_inventory()` calls at the exact
+  same location/day *genuinely in parallel* (two OS processes racing, not
+  sequential transactions) against real Postgres. Exactly one committed;
+  the other rolled back cleanly with the unique-constraint error and zero
+  leftover rows — confirming the atomicity fix from Phase 1 holds under
+  real concurrent load, not just sequential retries.
+- **PWA icon defect**: `apple-touch-icon` pointed at an SVG, which iOS
+  Safari does not support for home-screen icons — on an iPhone (a
+  plausible device for restaurant staff) "Add to Home Screen" would have
+  silently fallen back to a page screenshot instead of the intended icon.
+  Generated real PNG icons (180×180 for `apple-touch-icon`, 192×192 and
+  512×512 maskable icons for the manifest) and wired them into all three
+  HTML pages (`login.html`/`manager.html` were missing manifest/icon links
+  entirely).
+- **Service worker cache-first bug**: the SW cached the app shell at
+  install and never revalidated it, so a user who had already installed
+  the PWA would keep running old `app.js`/`storage.js` indefinitely —
+  including, hypothetically, a version with the security bugs fixed in
+  Phase 1 — until the `CACHE` constant was bumped *and* they happened to
+  reopen the app online. Rewrote to network-first with cache only as an
+  offline fallback, and excluded cross-origin/non-GET requests from being
+  intercepted (previously the fetch handler ran on every request including
+  Supabase API calls, which happened to be harmless but was fragile).
 
 ## Architecture
 
