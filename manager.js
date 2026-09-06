@@ -1,6 +1,7 @@
 // Headquarters/manager view: read-only visibility across locations.
 // RLS scopes every query to the signed-in manager's own organization.
 const app = document.getElementById("app");
+let PROFILE = null;
 
 function showError(err) {
   console.error(err);
@@ -18,7 +19,11 @@ async function renderDashboard() {
   const completeCount = rows.filter((r) => r.record).length;
 
   app.innerHTML = `
-    <div class="topbar"><div class="brand">Manager Dashboard</div><button class="pill" onclick="Auth.signOut()" style="margin-left:auto">Sign out</button></div>
+    <div class="topbar">
+      <div class="brand">Manager Dashboard</div>
+      ${PROFILE?.role === "admin" ? `<button class="pill" onclick="window.location.href='admin.html'" style="margin-left:auto">Admin</button>` : ""}
+      <button class="pill" onclick="Auth.signOut()" style="${PROFILE?.role === "admin" ? "" : "margin-left:auto"}">Sign out</button>
+    </div>
     <div class="screen">
       <h1>Today's Status</h1>
       <div class="mgr-status"><span class="status-chip">Inventory: ${completeCount}/${rows.length} completed</span></div>
@@ -57,14 +62,14 @@ async function showBranch(locationId) {
 async function boot() {
   await Auth.requireSession();
   try {
-    const profile = await Store.init();
+    PROFILE = await Store.init();
     // This is now backed by a real server-side boundary, not just UI: RLS
     // scopes an employee's reads/writes to their assigned location(s) via
     // the employee_locations table (see supabase/schema.sql), so even if
     // an employee opened this page directly they could not fetch another
     // location's data through the API. This check just gives them a clear
     // message instead of an empty/broken-looking dashboard.
-    if (profile.role === "employee") {
+    if (PROFILE.role === "employee") {
       app.innerHTML = `<div class="screen"><p class="muted">Manager or admin access required.</p></div>`;
       return;
     }

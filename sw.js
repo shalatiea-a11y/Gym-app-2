@@ -10,8 +10,8 @@
 // unreachable — which is exactly the case where a fallback earns its keep.
 const CACHE = "rios-v3";
 const ASSETS = [
-  "index.html", "manager.html", "login.html", "style.css", "config.js",
-  "auth.js", "storage.js", "app.js", "manager.js", "manifest.json",
+  "index.html", "manager.html", "login.html", "admin.html", "style.css", "config.js",
+  "auth.js", "storage.js", "app.js", "manager.js", "admin.js", "manifest.json",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
 ];
 

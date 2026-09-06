@@ -23,6 +23,8 @@ Honest classification per area (see "Testing" for exactly what each claim rests 
 | Concurrent submissions to the same location/day don't corrupt data | **VERIFIED** — two genuinely parallel processes raced against real Postgres; exactly one won, zero orphaned rows (see "Phase 3") |
 | Query scalability (no N+1, bounded result sets) | **VERIFIED** the fix's data shape against real Postgres; **NOT VERIFIED** under actual load/many-rows since this is still demo-scale data |
 | PWA icons render correctly on iOS home screen | **NOT VERIFIED** on a physical device (no device access in this sandbox) — but the underlying defect (SVG icon, unsupported by iOS Safari) is fixed with real PNGs; verified the files are valid images of the correct dimensions |
+| Admin UI (`admin.html`) — create/deactivate products & locations, assign/unassign employees to locations | **VERIFIED** the underlying writes against real Postgres (each SQL statement the UI issues, run directly); **NOT VERIFIED** in a browser — see Phase 4 below |
+| `employee_locations` read policy scoped to the caller's own organization | **VERIFIED** (real bug, real fix — see Phase 4) |
 | Employee/manager UI screens, PWA install, real Supabase Auth login | **NOT VERIFIED** — requires a real Supabase project + browser; this sandbox has no browser and cannot provision Supabase |
 | Delivery receiving, invoice AI, integrations, forecasting | **NOT BUILT** — deliberately out of scope for this MVP |
 
@@ -159,6 +161,67 @@ code:
   intercepted (previously the fetch handler ran on every request including
   Supabase API calls, which happened to be harmless but was fragile).
 
+### Phase 4: cross-tenant leak in `employee_locations`, and an admin UI
+
+Before building anything new on top of the Phase 2 `employee_locations`
+work, it was re-checked from scratch against real Postgres rather than
+assumed correct — and this found a real cross-tenant vulnerability that
+the Phase 2 test suite had missed: its read policy was
+
+```sql
+for select using (profile_id = auth.uid() or current_role_name() in ('admin', 'manager'))
+```
+
+which has **no organization scoping at all**. Any admin or manager, in
+*any* organization, could read every row in `employee_locations` — i.e.
+which employees are assigned to which locations, across every customer on
+the platform. This slipped through Phase 2's verification because that
+test scenario only ever seeded one organization, so "sees everyone" and
+"sees everyone in my org" looked identical. This pass deliberately used a
+two-organization scenario and caught it immediately: an org-1 admin could
+see an org-2 employee's location assignment.
+
+Fixed by scoping the admin/manager branch through `profiles` (safe — profiles'
+own policy never queries `employee_locations`, so no repeat of the Phase 2
+recursion bug):
+
+```sql
+profile_id = auth.uid()
+or (current_role_name() in ('admin', 'manager')
+    and profile_id in (select id from profiles where organization_id = current_org_id()))
+```
+
+Verified: an org-1 admin now sees exactly the 1 row belonging to their own
+org (not the 2 that exist across both orgs, confirmed as table owner). Also
+re-ran the full Phase 2 regression scenario (recursion-safety, admin-only
+writes, employee/manager scoping) to confirm this fix didn't reintroduce
+anything — no recursion errors, all prior checks still pass. The other two
+places using the same `current_role_name() in ('admin','manager')` pattern
+(`locations`, `inventory_submissions`) were already correctly wrapped in an
+outer `organization_id = current_org_id() AND (...)`, so this was the one
+instance of the bug, not a systemic pattern.
+
+With that fixed, built `admin.html`/`admin.js`: create/deactivate products,
+create/deactivate locations, and assign/unassign employees to locations —
+the actual missing piece between this and a manager configuring their
+organization without SQL access. It's a thin UI over new `storage.js`
+functions (`getAllProducts`, `createProduct`, `setProductActive`,
+`getAllLocations`, `createLocation`, `setLocationActive`, `getTeam`,
+`assignEmployeeLocation`, `unassignEmployeeLocation`) that reuse the exact
+patterns already in the file — no parallel data layer. The real
+authorization boundary is still server-side: the RLS "admin insert/update"
+policies reject these writes from anyone whose role isn't `admin`
+regardless of what the page shows; the page's own role check is just UX.
+
+Verified directly against Postgres: an admin creating a product, assigning
+an employee to a location (who then immediately sees it via the
+`locations` read policy), unassigning them (who then immediately loses
+it), and deactivating a product — each exactly the SQL statement the UI
+code issues, run and confirmed. **Not verified**: the actual page in a
+browser (this sandbox has none) — the form rendering, button wiring, and
+Supabase-JS-client plumbing around these verified SQL operations have not
+been exercised end-to-end.
+
 ## Architecture
 
 ```
@@ -219,9 +282,13 @@ own organization's rows.
   One submission per location per day is enforced at the database level.
 - **Manager dashboard** (`manager.html`) — which branches have completed
   today's inventory, and drill into any branch's submission history.
+- **Admin UI** (`admin.html`, linked from the manager dashboard for
+  `admin`-role users) — create/deactivate products and locations, and
+  assign employees to the location(s) they can count inventory for.
+  Replaces the need for direct SQL access to configure an organization.
 - **Configurable product catalog** — each organization's products, package
-  units and pieces-per-package live in the database, editable via SQL/the
-  Supabase table editor for now (an admin UI is a later phase, not this MVP).
+  units and pieces-per-package live in the database, managed through the
+  admin UI (or SQL/the Supabase table editor directly, if preferred).
 - **Installable PWA** — `manifest.json` + `sw.js`.
 
 ## What this is not (yet)

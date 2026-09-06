@@ -168,6 +168,89 @@ const Store = (() => {
     return data;
   }
 
+  // --- Admin configuration (products/locations/team) ---
+  // These issue plain inserts/updates rather than an RPC, unlike
+  // saveInventory: there's no multi-row atomicity concern (each is a
+  // single-row write) and no client-trusted calculation to guard against.
+  // The real authorization boundary is still server-side — the
+  // "admin insert/update" RLS policies in schema.sql reject these from
+  // anyone whose role isn't 'admin', regardless of what the UI shows.
+
+  async function getAllProducts() {
+    const { organization_id } = requireProfile();
+    const { data, error } = await supabaseClient
+      .from("products")
+      .select("*")
+      .eq("organization_id", organization_id)
+      .order("category")
+      .order("name");
+    if (error) throw error;
+    return data;
+  }
+
+  async function createProduct({ name, category, packageUnit, unitsPerPackage }) {
+    const { organization_id } = requireProfile();
+    const { error } = await supabaseClient.from("products").insert({
+      organization_id, name, category,
+      package_unit: packageUnit, units_per_package: unitsPerPackage,
+    });
+    if (error) throw error;
+  }
+
+  async function setProductActive(id, active) {
+    const { error } = await supabaseClient.from("products").update({ active }).eq("id", id);
+    if (error) throw error;
+  }
+
+  async function getAllLocations() {
+    const { organization_id } = requireProfile();
+    const { data, error } = await supabaseClient
+      .from("locations")
+      .select("*")
+      .eq("organization_id", organization_id)
+      .order("name");
+    if (error) throw error;
+    return data;
+  }
+
+  async function createLocation({ name }) {
+    const { organization_id } = requireProfile();
+    const { error } = await supabaseClient.from("locations").insert({ organization_id, name });
+    if (error) throw error;
+  }
+
+  async function setLocationActive(id, active) {
+    const { error } = await supabaseClient.from("locations").update({ active }).eq("id", id);
+    if (error) throw error;
+  }
+
+  // Team + their location assignments, one query each (not per-row) to
+  // avoid repeating the N+1 mistake fixed elsewhere in this file.
+  async function getTeam() {
+    const { organization_id } = requireProfile();
+    const [{ data: profiles, error: pErr }, { data: assignments, error: aErr }] = await Promise.all([
+      supabaseClient.from("profiles").select("id, full_name, role").eq("organization_id", organization_id).order("full_name"),
+      supabaseClient.from("employee_locations").select("profile_id, location_id, locations(name)"),
+    ]);
+    if (pErr) throw pErr;
+    if (aErr) throw aErr;
+    return profiles.map((p) => ({
+      ...p,
+      locations: assignments.filter((a) => a.profile_id === p.id).map((a) => ({ id: a.location_id, name: a.locations?.name })),
+    }));
+  }
+
+  async function assignEmployeeLocation(profileId, locationId) {
+    const { error } = await supabaseClient.from("employee_locations").insert({ profile_id: profileId, location_id: locationId });
+    if (error) throw error;
+  }
+
+  async function unassignEmployeeLocation(profileId, locationId) {
+    const { error } = await supabaseClient.from("employee_locations")
+      .delete().eq("profile_id", profileId).eq("location_id", locationId);
+    if (error) throw error;
+  }
+
   return {
     init,
     getProducts,
@@ -180,5 +263,14 @@ const Store = (() => {
     todaysInventories,
     getInventories,
     normalizeQuantity,
+    getAllProducts,
+    createProduct,
+    setProductActive,
+    getAllLocations,
+    createLocation,
+    setLocationActive,
+    getTeam,
+    assignEmployeeLocation,
+    unassignEmployeeLocation,
   };
 })();

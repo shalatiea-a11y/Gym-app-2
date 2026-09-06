@@ -119,10 +119,22 @@ $$;
 -- see, so if this policy queried locations right back, Postgres would
 -- detect infinite recursion between the two (confirmed by testing this
 -- exact scenario against a real instance — see README). A profile can
--- always see its own assignment rows; admins/managers can see everyone's.
-create policy "own assignments or admin/manager" on employee_locations
+-- always see its own assignment rows; admins/managers can see everyone's
+-- IN THEIR OWN ORGANIZATION — querying profiles (not locations) to scope
+-- this is safe, since profiles' own policy never queries employee_locations
+-- back. The unscoped "admin/manager sees everyone's" version of this
+-- policy shipped in the previous commit was a real cross-tenant leak (an
+-- admin in one org could read which employees are assigned to which
+-- locations in every other org on the platform) — caught in this pass
+-- because a two-organization test scenario was used, unlike the
+-- single-org scenario that verified the original recursion fix.
+create policy "own assignments or admin/manager in own org" on employee_locations
   for select using (
-    profile_id = auth.uid() or current_role_name() in ('admin', 'manager')
+    profile_id = auth.uid()
+    or (
+      current_role_name() in ('admin', 'manager')
+      and profile_id in (select id from profiles where organization_id = current_org_id())
+    )
   );
 
 create policy "admin manages location assignments" on employee_locations
