@@ -25,6 +25,7 @@ Honest classification per area (see "Testing" for exactly what each claim rests 
 | PWA icons render correctly on iOS home screen | **NOT VERIFIED** on a physical device (no device access in this sandbox) — but the underlying defect (SVG icon, unsupported by iOS Safari) is fixed with real PNGs; verified the files are valid images of the correct dimensions |
 | Admin UI (`admin.html`) — create/deactivate products & locations, assign/unassign employees to locations | **VERIFIED** the underlying writes against real Postgres (each SQL statement the UI issues, run directly); **NOT VERIFIED** in a browser — see Phase 4 below |
 | `employee_locations` read policy scoped to the caller's own organization | **VERIFIED** (real bug, real fix — see Phase 4) |
+| Employee self-service onboarding via invite code (`signup.html`/`join.html`, `redeem_invite()`) | **VERIFIED** against real Postgres: valid redemption, reused/expired/nonexistent code rejection, already-has-a-profile rejection, cross-org invite invisibility, and a genuine concurrent-redemption race (see Phase 5) — **NOT VERIFIED** in a browser, and the email-confirmation branch's exact behavior depends on Supabase Auth settings this sandbox can't configure or test |
 | Employee/manager UI screens, PWA install, real Supabase Auth login | **NOT VERIFIED** — requires a real Supabase project + browser; this sandbox has no browser and cannot provision Supabase |
 | Delivery receiving, invoice AI, integrations, forecasting | **NOT BUILT** — deliberately out of scope for this MVP |
 
@@ -222,6 +223,55 @@ browser (this sandbox has none) — the form rendering, button wiring, and
 Supabase-JS-client plumbing around these verified SQL operations have not
 been exercised end-to-end.
 
+### Phase 5: employee self-service onboarding (invite codes)
+
+Shipping `admin.html` immediately exposed the gap it didn't close: the
+Team tab can assign *existing* profiles to locations, but there was still
+no way to create a *new* profile without direct SQL access — the admin UI
+couldn't actually onboard anyone. Closed with an invite-code flow:
+
+- Admins generate a short code (`admin.html` → Team tab) scoped to a role
+  and a 7-day expiry, stored in a new `invites` table.
+- A new hire goes to `signup.html`, enters the code plus their own email/
+  password/name. This calls Supabase Auth's `signUp()` (creating their
+  `auth.users` row — outside this schema, Supabase-managed) and then a new
+  `redeem_invite(code, full_name)` Postgres function that creates their
+  `profiles` row.
+- The tricky part: at the moment they redeem a code, they have no
+  `profiles` row yet, so `current_org_id()` is null and none of the
+  org-scoped RLS policies would let them read anything — including the
+  invite row itself. `redeem_invite()` is `SECURITY DEFINER` specifically
+  to bypass that for its own narrow lookup, but it only ever creates a
+  profile for `auth.uid()` — the caller's own account — never an arbitrary
+  one; the function body is the trust boundary, not a table grant.
+- If the Supabase project requires email confirmation, there's no session
+  yet at signup time to call `redeem_invite()` with. Handled by stashing
+  the code/name in `localStorage` and adding `join.html`, which
+  `storage.js`'s `Store.init()` now redirects to automatically (same
+  pattern `Auth.requireSession()` already uses for "not logged in at all")
+  whenever a signed-in user has no `profiles` row yet.
+
+Verified against real Postgres, going beyond the happy path: a valid code
+redeems correctly and the resulting profile is immediately usable (correct
+org, correct role); reusing an already-used code is rejected; an expired
+code is rejected; a nonexistent code is rejected cleanly rather than
+crashing; an account that already has a profile is rejected from redeeming
+a second code; an org-2 user cannot see org-1's invites at all (RLS holds
+for this new table too, confirmed with the same two-organization
+methodology as Phase 4, precisely because Phase 4 showed that isn't
+automatic). Also fired two genuinely parallel redemption attempts at the
+exact same code (matching the Phase 3 concurrency methodology) — the
+function's `SELECT ... FOR UPDATE` row lock correctly serialized them:
+exactly one account got linked, the other cleanly rejected, no duplicate
+or partial profile.
+
+**Not verified**: the actual pages in a browser, and — since this sandbox
+cannot configure or drive Supabase Auth itself — the precise behavior of
+the email-confirmation-required branch (the `localStorage` handoff to
+`join.html`) end-to-end. The `redeem_invite()` half of that path (what
+happens once they do reach `join.html` with a valid session) is verified;
+the Supabase Auth email round-trip in front of it is not.
+
 ## Architecture
 
 ```
@@ -247,27 +297,32 @@ records stay auditable even if a product's package size changes later.
 2. In the SQL editor, run `supabase/schema.sql`. This creates the schema,
    enables RLS, and seeds a demo organization ("Demo Restaurant Group")
    with 3 locations and 10 products.
-3. In **Authentication → Users**, create one or more users (email +
-   password) for the demo.
-4. In the SQL editor, link each new user to the demo org:
+3. In **Authentication → Users**, create one user (email + password) to be
+   the first admin.
+4. **One-time bootstrap only** — link that first admin via SQL (there's no
+   admin yet to generate them an invite code):
    ```sql
    insert into profiles (id, organization_id, full_name, role)
-   values ('<the user''s auth uid>', '00000000-0000-0000-0000-000000000001', 'Demo Employee', 'employee');
+   values ('<the user''s auth uid>', '00000000-0000-0000-0000-000000000001', 'Demo Admin', 'admin');
    ```
-   If the role is `employee`, also assign which location(s) they can see
-   and submit inventory for (admins and managers automatically see every
-   location in the org and don't need this):
-   ```sql
-   insert into employee_locations (profile_id, location_id)
-   values ('<the user''s auth uid>', (select id from locations where name = 'Downtown'));
-   ```
-   An employee with no row here will see zero locations and be unable to
-   do anything — that's enforced by RLS, not a bug, but worth knowing when
-   a demo login "shows nothing."
+   Every other user after this one can be onboarded through the app itself
+   — see "Adding more people" below. No further SQL is required.
 5. In **Project Settings → API**, copy your Project URL and `anon` public
    key into `config.js`.
 6. Serve the folder with any static file server (or open `login.html`
-   directly) and sign in.
+   directly) and sign in as the admin you just created.
+
+### Adding more people (no SQL required)
+
+Once the first admin is signed in: **Manager Dashboard → Admin → Team tab
+→ Invite a new team member**, pick a role, and share the generated code
+with them. They go to `signup.html`, enter the code plus their own email/
+password/name, and their account is created and linked automatically. If
+their role is `employee`, an admin still needs to assign which
+location(s) they can work with (Team tab → pick a location → Assign) — an
+employee with no location assigned will see zero locations and be unable
+to start inventory, which is enforced by RLS, not a bug, but worth knowing
+if a fresh account "shows nothing."
 
 The `anon` key is safe to ship in frontend code — on its own it grants no
 access; RLS policies are what actually restrict a signed-in user to their

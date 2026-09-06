@@ -110,29 +110,74 @@ async function toggleLocation(id, active) {
 }
 
 async function renderTeam() {
-  const [team, locations] = await Promise.all([Store.getTeam(), Store.getAllLocations()]);
+  const [team, locations, invites] = await Promise.all([Store.getTeam(), Store.getAllLocations(), Store.getInvites()]);
   const body = document.getElementById("adminBody");
-  body.innerHTML = team.map((member) => `
-    <div class="history-card">
-      <div class="history-head"><span>${member.full_name}</span><span class="muted">${member.role}</span></div>
-      ${member.role === "employee" ? `
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
-          ${member.locations.length === 0 ? `<span class="muted">No locations assigned — this employee cannot start inventory anywhere yet.</span>` : ""}
-          ${member.locations.map((l) => `
-            <span class="badge green">${l.name}
-              <button onclick="unassign('${member.id}','${l.id}')" style="border:none;background:none;color:#15803d;cursor:pointer;margin-left:4px">×</button>
-            </span>
-          `).join("")}
-        </div>
-        <div style="display:flex;gap:8px">
-          <select id="loc-${member.id}" style="flex:1;padding:8px;border:1px solid #e5e7eb;border-radius:8px">
-            ${locations.filter((l) => !member.locations.some((ml) => ml.id === l.id)).map((l) => `<option value="${l.id}">${l.name}</option>`).join("")}
-          </select>
-          <button class="pill" onclick="assign('${member.id}')">Assign</button>
-        </div>
-      ` : `<p class="muted">Sees and manages all locations in the organization.</p>`}
+  const pendingInvites = invites.filter((i) => !i.used_at && new Date(i.expires_at) > new Date());
+
+  body.innerHTML = `
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div class="stepper-row" style="margin-bottom:0">
+        <label>Invite a new team member</label>
+        <select id="inviteRole" style="padding:8px;border:1px solid #e5e7eb;border-radius:8px">
+          <option value="employee">Employee</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button class="pill" onclick="createInvite()">Generate code</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Share the code with them (in person, chat, etc). They enter it at signup.html along with their own email and password — no SQL access needed. Codes expire after 7 days and work once.</p>
+      <div id="newInviteCode"></div>
     </div>
-  `).join("");
+
+    ${pendingInvites.length ? `
+      <p class="muted">Pending invites</p>
+      ${pendingInvites.map((i) => `
+        <div class="list-row" style="cursor:default">
+          <span><strong>${i.code}</strong> <span class="muted">— ${i.role}, expires ${new Date(i.expires_at).toLocaleDateString()}</span></span>
+          <button class="pill" onclick="revokeInvite('${i.id}')">Revoke</button>
+        </div>
+      `).join("")}
+    ` : ""}
+
+    <p class="muted" style="margin-top:16px">Team</p>
+    ${team.map((member) => `
+      <div class="history-card">
+        <div class="history-head"><span>${member.full_name}</span><span class="muted">${member.role}</span></div>
+        ${member.role === "employee" ? `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+            ${member.locations.length === 0 ? `<span class="muted">No locations assigned — this employee cannot start inventory anywhere yet.</span>` : ""}
+            ${member.locations.map((l) => `
+              <span class="badge green">${l.name}
+                <button onclick="unassign('${member.id}','${l.id}')" style="border:none;background:none;color:#15803d;cursor:pointer;margin-left:4px">×</button>
+              </span>
+            `).join("")}
+          </div>
+          <div style="display:flex;gap:8px">
+            <select id="loc-${member.id}" style="flex:1;padding:8px;border:1px solid #e5e7eb;border-radius:8px">
+              ${locations.filter((l) => !member.locations.some((ml) => ml.id === l.id)).map((l) => `<option value="${l.id}">${l.name}</option>`).join("")}
+            </select>
+            <button class="pill" onclick="assign('${member.id}')">Assign</button>
+          </div>
+        ` : `<p class="muted">Sees and manages all locations in the organization.</p>`}
+      </div>
+    `).join("")}
+  `;
+}
+
+async function createInvite() {
+  const role = document.getElementById("inviteRole").value;
+  try {
+    const code = await Store.createInvite(role);
+    document.getElementById("newInviteCode").innerHTML =
+      `<div class="total-card" style="margin-top:10px"><span>New code (${role})</span><span class="total-val">${code}</span></div>`;
+    // Don't full re-render yet — that would wipe the code we just showed;
+    // the new invite will simply appear in the pending list next visit.
+  } catch (err) { showError(err); }
+}
+
+async function revokeInvite(id) {
+  try { await Store.revokeInvite(id); await renderTeam(); }
+  catch (err) { showError(err); }
 }
 
 async function assign(profileId) {

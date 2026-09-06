@@ -9,7 +9,17 @@ const Store = (() => {
   async function init() {
     profile = await Auth.getProfile();
     if (!profile) {
-      throw new Error("No profile linked to this account — see supabase/schema.sql for how to link a demo user.");
+      // Signed in (passed Auth.requireSession()) but no profiles row yet —
+      // either a fresh signup.html signup whose email-confirmation flow
+      // hasn't reached redeem_invite() yet, or a demo account an admin
+      // hasn't linked via SQL. Either way, join.html is where that gets
+      // resolved, same as Auth.requireSession() redirecting to login.html
+      // for "not signed in at all". Guard against join.html itself calling
+      // Store.init() and redirect-looping.
+      if (!location.pathname.endsWith("join.html")) {
+        window.location.href = "join.html";
+      }
+      throw new Error("No profile linked to this account yet — redirecting to finish setup.");
     }
     return profile;
   }
@@ -251,6 +261,48 @@ const Store = (() => {
     if (error) throw error;
   }
 
+  function generateInviteCode() {
+    // Short, human-typeable (no ambiguous 0/O/1/I), not a security secret on
+    // its own — the 7-day expiry + single-use enforcement in
+    // redeem_invite() is what actually matters, this is just legible.
+    const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    let code = "";
+    for (let i = 0; i < 8; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    return code;
+  }
+
+  async function createInvite(role) {
+    const { organization_id, id } = requireProfile();
+    const code = generateInviteCode();
+    const { error } = await supabaseClient.from("invites").insert({
+      organization_id, code, role, created_by: id,
+    });
+    if (error) throw error;
+    return code;
+  }
+
+  async function getInvites() {
+    const { organization_id } = requireProfile();
+    const { data, error } = await supabaseClient
+      .from("invites")
+      .select("*")
+      .eq("organization_id", organization_id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  }
+
+  async function revokeInvite(id) {
+    const { error } = await supabaseClient.from("invites").delete().eq("id", id).is("used_at", null);
+    if (error) throw error;
+  }
+
+  async function redeemInvite(code, fullName) {
+    const { data, error } = await supabaseClient.rpc("redeem_invite", { p_code: code, p_full_name: fullName });
+    if (error) throw error;
+    return data;
+  }
+
   return {
     init,
     getProducts,
@@ -272,5 +324,9 @@ const Store = (() => {
     getTeam,
     assignEmployeeLocation,
     unassignEmployeeLocation,
+    createInvite,
+    getInvites,
+    revokeInvite,
+    redeemInvite,
   };
 })();

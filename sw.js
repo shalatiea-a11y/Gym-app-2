@@ -8,11 +8,11 @@
 // try the network first (so a signed-in user always gets current code and
 // current data), and only fall back to the cached copy if the network is
 // unreachable — which is exactly the case where a fallback earns its keep.
-const CACHE = "rios-v3";
+const CACHE = "rios-v4";
 const ASSETS = [
-  "index.html", "manager.html", "login.html", "admin.html", "style.css", "config.js",
-  "auth.js", "storage.js", "app.js", "manager.js", "admin.js", "manifest.json",
-  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
+  "index.html", "manager.html", "login.html", "admin.html", "signup.html", "join.html",
+  "style.css", "config.js", "auth.js", "storage.js", "app.js", "manager.js", "admin.js",
+  "manifest.json", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (e) => {

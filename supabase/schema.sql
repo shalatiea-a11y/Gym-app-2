@@ -304,6 +304,75 @@ begin
 end;
 $$;
 
+-- Employee onboarding without direct SQL/database access. An admin
+-- creates an invite (code + intended role) for their org; a new user signs
+-- up with Supabase Auth (which creates their auth.users row, outside this
+-- schema) and then redeems the code to get a profiles row created for
+-- them. The tricky part: at redemption time the new user has NO profile
+-- yet, so current_org_id() is null and none of the org-scoped RLS
+-- policies would let them read anything — including the invites row
+-- itself. redeem_invite() is SECURITY DEFINER specifically so it can look
+-- up the invite by code (bypassing RLS) while still only ever creating a
+-- profile for auth.uid() itself, never an arbitrary user — the function
+-- body is the entire trust boundary here, not a table grant.
+create table invites (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references organizations(id) on delete cascade,
+  code text not null unique,
+  role text not null default 'employee' check (role in ('employee', 'manager', 'admin')),
+  created_by uuid not null references profiles(id),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '7 days'),
+  used_at timestamptz,
+  used_by uuid references profiles(id)
+);
+alter table invites enable row level security;
+
+-- Only admins manage invites, and only for their own org. Deliberately no
+-- policy lets a plain "select by code" happen for an unauthenticated or
+-- profile-less caller — redeem_invite() below is the only path in.
+create policy "admin manages invites in own org" on invites
+  for all using (organization_id = current_org_id() and current_role_name() = 'admin')
+  with check (organization_id = current_org_id() and current_role_name() = 'admin');
+
+create or replace function redeem_invite(p_code text, p_full_name text)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_invite invites%rowtype;
+  v_org_id uuid;
+begin
+  if exists (select 1 from profiles where id = auth.uid()) then
+    raise exception 'This account already has a profile';
+  end if;
+
+  select * into v_invite from invites where code = p_code for update;
+  if not found then
+    raise exception 'Invalid invite code';
+  end if;
+  if v_invite.used_at is not null then
+    raise exception 'This invite code has already been used';
+  end if;
+  if v_invite.expires_at < now() then
+    raise exception 'This invite code has expired';
+  end if;
+
+  insert into profiles (id, organization_id, full_name, role)
+  values (auth.uid(), v_invite.organization_id, p_full_name, v_invite.role);
+
+  update invites set used_at = now(), used_by = auth.uid() where id = v_invite.id;
+
+  return v_invite.organization_id;
+end;
+$$;
+-- Callable by any authenticated Supabase user, including one with no
+-- profile row yet (that's the whole point) — Postgres's default grants
+-- already cover this for a SECURITY DEFINER function owned by a superuser/
+-- table owner, but this makes the intent explicit rather than implicit.
+grant execute on function redeem_invite(text, text) to authenticated;
+
 -- ---------------------------------------------------------------------
 -- Demo seed data. Safe to run once. Create the two demo logins afterwards
 -- in Supabase Auth (see README), then insert their profiles below.
